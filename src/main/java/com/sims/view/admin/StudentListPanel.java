@@ -80,16 +80,15 @@ public class StudentListPanel extends JPanel {
         JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
 
         searchField.setToolTipText("Search by name, roll number, or department");
-        JButton searchBtn = new JButton("🔍 Search");
-        JButton addBtn    = new JButton("➕ Add New Student");
-        addBtn.setBackground(new Color(34, 139, 34));
-        addBtn.setForeground(Color.WHITE);
-        addBtn.setFocusPainted(false);
+        JButton searchBtn  = new JButton("Search");
+        JButton refreshBtn = new JButton("Refresh");
+        JButton addBtn     = createStyledButton("+ Add New Student", new Color(34, 139, 34), new Color(46, 160, 46));
 
         controls.add(new JLabel("Search:"));
         controls.add(searchField);
         controls.add(searchBtn);
-        controls.add(Box.createHorizontalStrut(12));
+        controls.add(refreshBtn);
+        controls.add(Box.createHorizontalStrut(10));
         controls.add(addBtn);
 
         bar.add(title,    BorderLayout.WEST);
@@ -97,12 +96,50 @@ public class StudentListPanel extends JPanel {
 
         // ── Observers (ActionListeners) ─────────────────────────────────────
         searchBtn.addActionListener(e -> loadStudents(searchField.getText()));
-
+        refreshBtn.addActionListener(e -> {
+            searchField.setText("");
+            loadStudents("");
+        });
         searchField.addActionListener(e -> loadStudents(searchField.getText())); // Enter key
-
         addBtn.addActionListener(e -> openFormDialog(null));   // null = CREATE mode
 
         return bar;
+    }
+
+    /**
+     * Creates a custom painted button with anti-aliasing, rounded corners,
+     * and rollover/press states that works reliably across all Swing Look and Feels
+     * (especially Windows L&F where default JButtons ignore setBackground with white text).
+     */
+    private JButton createStyledButton(String text, Color normalColor, Color hoverColor) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Color fill;
+                if (getModel().isPressed()) {
+                    fill = normalColor.darker();
+                } else if (getModel().isRollover()) {
+                    fill = hoverColor;
+                } else {
+                    fill = normalColor;
+                }
+                g2.setColor(fill);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(new Font("SansSerif", Font.BOLD, 12));
+        btn.setForeground(Color.WHITE);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setOpaque(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
+        return btn;
     }
 
     private DefaultTableModel buildTableModel() {

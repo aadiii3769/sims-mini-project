@@ -122,13 +122,11 @@ public class StudentFormDialog extends JDialog {
         addRow(form, lc, fc, row++, "Full Name *",  fullNameField);
         addRow(form, lc, fc, row++, "Username *",   usernameField);
 
-        // Password row — only in CREATE mode
-        passwordRow = new JPanel(new BorderLayout());
-        passwordRow.add(passwordField, BorderLayout.CENTER);
-        addRow(form, lc, fc, row++, "Password *", passwordRow);
-        if (existingStudent != null) {
-            passwordRow.setVisible(false);
-            // Hide the label too via GridBagLayout trick — add invisible label
+        // Password row — only added to form in CREATE mode to avoid orphan label
+        if (existingStudent == null) {
+            passwordRow = new JPanel(new BorderLayout());
+            passwordRow.add(passwordField, BorderLayout.CENTER);
+            addRow(form, lc, fc, row++, "Password *", passwordRow);
         }
 
         addRow(form, lc, fc, row++, "Email *",      emailField);
@@ -170,12 +168,17 @@ public class StudentFormDialog extends JDialog {
     private JPanel buildButtons() {
         JPanel bar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
 
-        JButton saveBtn   = new JButton(existingStudent == null ? "Register Student" : "Save Changes");
         JButton cancelBtn = new JButton("Cancel");
+        cancelBtn.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        cancelBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        cancelBtn.setPreferredSize(new Dimension(85, 30));
 
-        saveBtn.setBackground(new Color(34, 100, 180));
-        saveBtn.setForeground(Color.WHITE);
-        saveBtn.setFocusPainted(false);
+        JButton saveBtn = createStyledButton(
+            existingStudent == null ? "Register Student" : "Save Changes",
+            new Color(30, 90, 180),
+            new Color(45, 115, 215)
+        );
+        saveBtn.setPreferredSize(new Dimension(135, 30));
 
         // ── Observer: Save ────────────────────────────────────────────────────
         saveBtn.addActionListener(e -> onSave());
@@ -188,11 +191,47 @@ public class StudentFormDialog extends JDialog {
         return bar;
     }
 
+    /**
+     * Creates a custom painted button with anti-aliasing, rounded corners,
+     * and rollover/press states that works reliably across all Swing Look and Feels.
+     */
+    private JButton createStyledButton(String text, Color normalColor, Color hoverColor) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Color fill;
+                if (getModel().isPressed()) {
+                    fill = normalColor.darker();
+                } else if (getModel().isRollover()) {
+                    fill = hoverColor;
+                } else {
+                    fill = normalColor;
+                }
+                g2.setColor(fill);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(new Font("SansSerif", Font.BOLD, 12));
+        btn.setForeground(Color.WHITE);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setOpaque(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
+        return btn;
+    }
+
     // ── Field Population (EDIT mode) ─────────────────────────────────────────
 
     private void populateFields(Student s) {
         fullNameField.setText(s.getFullName());
-        usernameField.setText(String.valueOf(s.getUserId()));  // display userId as ref
+        // Show roll number as the identity reference (not the internal userId)
+        usernameField.setText(s.getRollNumber());
         emailField.setText(s.getEmail());
         rollField.setText(s.getRollNumber());
 

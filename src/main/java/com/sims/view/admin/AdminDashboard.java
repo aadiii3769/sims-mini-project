@@ -2,6 +2,7 @@ package com.sims.view.admin;
 
 import com.sims.model.User;
 import com.sims.util.DBConnection;
+import com.sims.view.LoginFrame;
 
 import javax.swing.*;
 import java.awt.*;
@@ -78,14 +79,68 @@ public class AdminDashboard extends JFrame {
         titleLabel.setFont(new Font("SansSerif", Font.BOLD, 18));
         titleLabel.setForeground(Color.WHITE);
 
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 14, 0));
+        rightPanel.setOpaque(false);
+
         JLabel userLabel = new JLabel("Logged in as: " + loggedInUser.getFullName() +
                                       "  |  Role: ADMIN");
         userLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
         userLabel.setForeground(new Color(180, 210, 255));
 
+        JButton logoutBtn = createLogoutButton();
+
+        rightPanel.add(userLabel);
+        rightPanel.add(logoutBtn);
+
         header.add(titleLabel, BorderLayout.WEST);
-        header.add(userLabel,  BorderLayout.EAST);
+        header.add(rightPanel, BorderLayout.EAST);
         return header;
+    }
+
+    private JButton createLogoutButton() {
+        JButton btn = new JButton("Logout") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Color fill;
+                if (getModel().isPressed()) {
+                    fill = new Color(160, 35, 35);
+                } else if (getModel().isRollover()) {
+                    fill = new Color(215, 55, 55);
+                } else {
+                    fill = new Color(190, 45, 45);
+                }
+                g2.setColor(fill);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(new Font("SansSerif", Font.BOLD, 12));
+        btn.setForeground(Color.WHITE);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setOpaque(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
+        btn.addActionListener(e -> handleLogout());
+        return btn;
+    }
+
+    private void handleLogout() {
+        int choice = JOptionPane.showConfirmDialog(
+            this,
+            "Are you sure you want to log out?",
+            "Confirm Logout",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE
+        );
+        if (choice == JOptionPane.YES_OPTION) {
+            dispose();
+            SwingUtilities.invokeLater(() -> new LoginFrame().setVisible(true));
+        }
     }
 
     private JPanel buildStatusBar() {

@@ -2,13 +2,17 @@ package com.sims.factory;
 
 import com.sims.model.User;
 import com.sims.model.UserRole;
+import com.sims.view.LoginFrame;
 import com.sims.view.admin.AdminDashboard;
 
+import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 
 /**
  * Factory Method for role-specific dashboard creation.
@@ -89,10 +93,20 @@ public final class DashboardFactory {
         JLabel label = new JLabel(
             "<html><center><h2>" + title + "</h2>" +
             "<p>Welcome, " + user.getFullName() + "</p>" +
-            "<p><i>Phase 1 implementation pending.</i></p></center></html>",
+            "<p><i>Implementation pending.</i></p></center></html>",
             SwingConstants.CENTER
         );
         panel.add(label, BorderLayout.CENTER);
+
+        JPanel bottomBar = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        JButton logoutBtn = new JButton("Logout");
+        logoutBtn.addActionListener(e -> {
+            frame.dispose();
+            SwingUtilities.invokeLater(() -> new LoginFrame().setVisible(true));
+        });
+        bottomBar.add(logoutBtn);
+        panel.add(bottomBar, BorderLayout.SOUTH);
+
         frame.setContentPane(panel);
         return frame;
     }
