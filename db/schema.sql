@@ -8,6 +8,9 @@
 -- Normalization note: all tables satisfy 3NF — see docs/DATABASE.md for the
 -- step-by-step academic justification (UNF → 1NF → 2NF → 3NF).
 -- =============================================================================
+SET SQLBLANKLINES ON;
+SET DEFINE OFF;
+-- =============================================================================
 
 -- ── Safety: drop tables in dependency order (child → parent) ─────────────────
 BEGIN

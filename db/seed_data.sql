@@ -11,6 +11,9 @@
 --   student*  / student@123  → $2a$10$vEbjDQRTlmHZvoYz8FjAXuevtLMvEIBb0fX65R7e9SrGjOLSDbgV.
 --   parent*   / parent@123   → $2a$10$TiimBtoeVSGdP.6FRlJKL.59iBdzq6/LKoVR4M/QB7xKgrDUjNiZm
 -- =============================================================================
+SET SQLBLANKLINES ON;
+SET DEFINE OFF;
+-- =============================================================================
 
 -- ── 1. USERS ─────────────────────────────────────────────────────────────────
 -- USER_IDs are explicitly set to small fixed values to make FK references

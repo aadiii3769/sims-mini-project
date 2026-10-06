@@ -7,8 +7,8 @@ services:
     restart: unless-stopped
 
     ports:
-      # Host:Container — default Oracle listener port
-      - "1521:1521"
+      # Host:Container — mapped to 1522 to avoid conflict with local Oracle listener
+      - "1522:1521"
 
     environment:
       # Root SYS / SYSTEM password (matches .env.example)
