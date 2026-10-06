@@ -1,0 +1,41 @@
+services:
+
+  oracle-db:
+    # Lightweight Oracle Database Free (XE) image — no licence required for dev/edu use.
+    image: gvenzl/oracle-free:slim
+    container_name: sims_oracle_db
+    restart: unless-stopped
+
+    ports:
+      # Host:Container — default Oracle listener port
+      - "1521:1521"
+
+    environment:
+      # Root SYS / SYSTEM password (matches .env.example)
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-admin}
+      # Pluggable database that JDBC connects to: jdbc:oracle:thin:@localhost:1521/FREEPDB1
+      ORACLE_DATABASE: ${ORACLE_DATABASE:-FREEPDB1}
+      # App-specific user created automatically by the image
+      APP_USER: sims_app
+      APP_USER_PASSWORD: ${DB_PASSWORD:-admin}
+
+    volumes:
+      # Named volume keeps data across container restarts
+      - oracle-data:/opt/oracle/oradata
+      # Any *.sql / *.sh file dropped here runs once on first container init
+      - ./db:/container-entrypoint-initdb.d:ro
+
+    # Healthcheck: poll SQL*Plus until the DB reports OPEN status
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - |
+          healthcheck.sh
+      interval: 30s
+      timeout: 20s
+      retries: 10
+      start_period: 120s   # Oracle needs ~2 min to initialise on first boot
+
+volumes:
+  oracle-data:
+    driver: local
