@@ -58,6 +58,48 @@ VALUES (12, 'student03',
         'Mohammed Farhan A.',
         'farhan@student.sims.edu', '9123456783', 'STUDENT');
 
+INSERT INTO USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE)
+VALUES (13, 'student04',
+        '$2a$10$vEbjDQRTlmHZvoYz8FjAXuevtLMvEIBb0fX65R7e9SrGjOLSDbgV.',
+        'Ananya Venkatesh',
+        'ananya.v@student.sims.edu', '9123456784', 'STUDENT');
+
+INSERT INTO USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE)
+VALUES (14, 'student05',
+        '$2a$10$vEbjDQRTlmHZvoYz8FjAXuevtLMvEIBb0fX65R7e9SrGjOLSDbgV.',
+        'Karthik Subramanian',
+        'karthik.s@student.sims.edu', '9123456785', 'STUDENT');
+
+INSERT INTO USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE)
+VALUES (15, 'student06',
+        '$2a$10$vEbjDQRTlmHZvoYz8FjAXuevtLMvEIBb0fX65R7e9SrGjOLSDbgV.',
+        'Sneha Murugan',
+        'sneha.m@student.sims.edu', '9123456786', 'STUDENT');
+
+INSERT INTO USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE)
+VALUES (16, 'student07',
+        '$2a$10$vEbjDQRTlmHZvoYz8FjAXuevtLMvEIBb0fX65R7e9SrGjOLSDbgV.',
+        'Rohit R. Menon',
+        'rohit.menon@student.sims.edu', '9123456787', 'STUDENT');
+
+INSERT INTO USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE)
+VALUES (17, 'student08',
+        '$2a$10$vEbjDQRTlmHZvoYz8FjAXuevtLMvEIBb0fX65R7e9SrGjOLSDbgV.',
+        'Divya Balachandran',
+        'divya.bala@student.sims.edu', '9123456788', 'STUDENT');
+
+INSERT INTO USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE)
+VALUES (18, 'student09',
+        '$2a$10$vEbjDQRTlmHZvoYz8FjAXuevtLMvEIBb0fX65R7e9SrGjOLSDbgV.',
+        'Vigneshwaran K.',
+        'vignesh.k@student.sims.edu', '9123456789', 'STUDENT');
+
+INSERT INTO USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE)
+VALUES (19, 'student10',
+        '$2a$10$vEbjDQRTlmHZvoYz8FjAXuevtLMvEIBb0fX65R7e9SrGjOLSDbgV.',
+        'Keerthana Natarajan',
+        'keerthana.n@student.sims.edu', '9123456790', 'STUDENT');
+
 -- Parents (password: parent@123)
 INSERT INTO USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE)
 VALUES (20, 'parent01',
@@ -89,6 +131,48 @@ INSERT INTO STUDENT (STUDENT_ID, USER_ID, ROLL_NUMBER, DEPARTMENT, YEAR, SECTION
 VALUES (103, 12, '22IT001', 'Information Technology',
         3, 'B', DATE '2004-03-10',
         '15, Park Street, Madurai - 625 001', NULL);
+
+INSERT INTO STUDENT (STUDENT_ID, USER_ID, ROLL_NUMBER, DEPARTMENT, YEAR, SECTION,
+                     DATE_OF_BIRTH, ADDRESS, PARENT_USER_ID)
+VALUES (104, 13, '22CS003', 'Computer Science and Engineering',
+        3, 'A', DATE '2004-11-05',
+        '18, Temple Road, Mylapore, Chennai - 600 004', NULL);
+
+INSERT INTO STUDENT (STUDENT_ID, USER_ID, ROLL_NUMBER, DEPARTMENT, YEAR, SECTION,
+                     DATE_OF_BIRTH, ADDRESS, PARENT_USER_ID)
+VALUES (105, 14, '23IT001', 'Information Technology',
+        2, 'B', DATE '2005-04-18',
+        '5/12, Lake View Road, Madurai - 625 020', NULL);
+
+INSERT INTO STUDENT (STUDENT_ID, USER_ID, ROLL_NUMBER, DEPARTMENT, YEAR, SECTION,
+                     DATE_OF_BIRTH, ADDRESS, PARENT_USER_ID)
+VALUES (106, 15, '23EC001', 'Electronics and Communication',
+        2, 'A', DATE '2005-08-30',
+        '29, Cross Cut Road, Coimbatore - 641 012', NULL);
+
+INSERT INTO STUDENT (STUDENT_ID, USER_ID, ROLL_NUMBER, DEPARTMENT, YEAR, SECTION,
+                     DATE_OF_BIRTH, ADDRESS, PARENT_USER_ID)
+VALUES (107, 16, '24AI001', 'Artificial Intelligence and Data Science',
+        1, 'A', DATE '2006-01-22',
+        '88, Beach Road, Thiruvananthapuram - 695 001', NULL);
+
+INSERT INTO STUDENT (STUDENT_ID, USER_ID, ROLL_NUMBER, DEPARTMENT, YEAR, SECTION,
+                     DATE_OF_BIRTH, ADDRESS, PARENT_USER_ID)
+VALUES (108, 17, '21ME001', 'Mechanical Engineering',
+        4, 'A', DATE '2003-07-14',
+        '102, Nehru Street, Salem - 636 007', NULL);
+
+INSERT INTO STUDENT (STUDENT_ID, USER_ID, ROLL_NUMBER, DEPARTMENT, YEAR, SECTION,
+                     DATE_OF_BIRTH, ADDRESS, PARENT_USER_ID)
+VALUES (109, 18, '22CS004', 'Computer Science and Engineering',
+        3, 'B', DATE '2004-12-01',
+        '14, VOC Nagar, Tirunelveli - 627 002', NULL);
+
+INSERT INTO STUDENT (STUDENT_ID, USER_ID, ROLL_NUMBER, DEPARTMENT, YEAR, SECTION,
+                     DATE_OF_BIRTH, ADDRESS, PARENT_USER_ID)
+VALUES (110, 19, '23EC002', 'Electronics and Communication',
+        2, 'B', DATE '2005-09-19',
+        '77, Anna Nagar West, Chennai - 600 040', NULL);
 
 -- ── 3. ATTENDANCE records (last 5 school days) ────────────────────────────────
 -- Subject: Object-Oriented Programming (CS3391) — Faculty ID 2
