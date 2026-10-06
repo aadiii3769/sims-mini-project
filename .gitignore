@@ -3,6 +3,7 @@
 
 # ─── Maven build output ───────────────────────────────────────────────────────
 target/
+maven/
 *.class
 *.jar
 *.war
