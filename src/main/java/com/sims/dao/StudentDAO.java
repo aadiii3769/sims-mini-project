@@ -47,6 +47,14 @@ public class StudentDAO {
         "FROM   STUDENT s JOIN USERS u ON s.USER_ID = u.USER_ID " +
         "WHERE  s.ROLL_NUMBER = ?";
 
+    private static final String SQL_FIND_BY_PARENT_USER_ID =
+        "SELECT s.STUDENT_ID, s.USER_ID, s.ROLL_NUMBER, s.DEPARTMENT, s.YEAR, " +
+        "       s.SECTION, s.DATE_OF_BIRTH, s.ADDRESS, s.PARENT_USER_ID, " +
+        "       u.FULL_NAME, u.EMAIL " +
+        "FROM   STUDENT s JOIN USERS u ON s.USER_ID = u.USER_ID " +
+        "WHERE  s.PARENT_USER_ID = ? " +
+        "ORDER BY s.ROLL_NUMBER";
+
     private static final String SQL_INSERT =
         "INSERT INTO STUDENT (USER_ID, ROLL_NUMBER, DEPARTMENT, YEAR, SECTION, " +
         "                     DATE_OF_BIRTH, ADDRESS, PARENT_USER_ID) " +
@@ -72,6 +80,16 @@ public class StudentDAO {
     public Optional<Student> findByRollNumber(String rollNumber) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(SQL_FIND_BY_ROLL)) {
             ps.setString(1, rollNumber);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) return Optional.of(mapRow(rs));
+            }
+        }
+        return Optional.empty();
+    }
+
+    public Optional<Student> findByParentUserId(long parentUserId) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement(SQL_FIND_BY_PARENT_USER_ID)) {
+            ps.setLong(1, parentUserId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return Optional.of(mapRow(rs));
             }

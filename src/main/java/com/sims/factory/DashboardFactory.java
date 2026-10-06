@@ -2,17 +2,12 @@ package com.sims.factory;
 
 import com.sims.model.User;
 import com.sims.model.UserRole;
-import com.sims.view.LoginFrame;
 import com.sims.view.admin.AdminDashboard;
+import com.sims.view.faculty.FacultyDashboard;
+import com.sims.view.parent.ParentDashboard;
+import com.sims.view.student.StudentDashboard;
 
-import javax.swing.JButton;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import java.awt.BorderLayout;
-import java.awt.FlowLayout;
 
 /**
  * Factory Method for role-specific dashboard creation.
@@ -34,9 +29,8 @@ import java.awt.FlowLayout;
  * dashboard.setVisible(true);
  * }</pre>
  *
- * <p>Phase 1 will replace the stub {@code JFrame} returns with fully
- * implemented {@code AdminDashboard}, {@code FacultyDashboard},
- * {@code StudentDashboard}, and {@code ParentDashboard} views.</p>
+ * <p>Phase implementations replace placeholder frames with full dashboards
+ * while keeping login routing unchanged.</p>
  */
 public final class DashboardFactory {
 
@@ -64,50 +58,18 @@ public final class DashboardFactory {
     // ── Private factory methods ──────────────────────────────────────────────
 
     private static JFrame createAdminDashboard(User user) {
-        return new AdminDashboard(user);   // Phase 2: full implementation
+        return new AdminDashboard(user);
     }
 
     private static JFrame createFacultyDashboard(User user) {
-        // TODO (Phase 3): return new FacultyDashboard(user);
-        return buildStubFrame("Faculty Dashboard", user);
+        return new FacultyDashboard(user);
     }
 
     private static JFrame createStudentDashboard(User user) {
-        // TODO (Phase 4): return new StudentDashboard(user);
-        return buildStubFrame("Student Dashboard", user);
+        return new StudentDashboard(user);
     }
 
     private static JFrame createParentDashboard(User user) {
-        // TODO (Phase 5): return new ParentDashboard(user);
-        return buildStubFrame("Parent Dashboard", user);
-    }
-
-    /** Temporary scaffold frame used until real dashboards are implemented. */
-    private static JFrame buildStubFrame(String title, User user) {
-        JFrame frame = new JFrame(title + " — " + user.getFullName());
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(900, 650);
-        frame.setLocationRelativeTo(null);
-
-        JPanel panel = new JPanel(new BorderLayout());
-        JLabel label = new JLabel(
-            "<html><center><h2>" + title + "</h2>" +
-            "<p>Welcome, " + user.getFullName() + "</p>" +
-            "<p><i>Implementation pending.</i></p></center></html>",
-            SwingConstants.CENTER
-        );
-        panel.add(label, BorderLayout.CENTER);
-
-        JPanel bottomBar = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        JButton logoutBtn = new JButton("Logout");
-        logoutBtn.addActionListener(e -> {
-            frame.dispose();
-            SwingUtilities.invokeLater(() -> new LoginFrame().setVisible(true));
-        });
-        bottomBar.add(logoutBtn);
-        panel.add(bottomBar, BorderLayout.SOUTH);
-
-        frame.setContentPane(panel);
-        return frame;
+        return new ParentDashboard(user);
     }
 }
