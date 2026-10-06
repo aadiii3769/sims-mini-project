@@ -1,28 +1,33 @@
 package com.sims;
 
+import com.sims.view.SplashScreen;
+
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 /**
- * Application entry point.
+ * Application entry point — Student Information Management System (SIMS).
  *
- * <p>Responsibilities (Phase 0 stub):
- * <ul>
- *   <li>Apply the OS-native Look-and-Feel so Swing renders consistently
- *       on Windows, macOS, and Linux without custom painting.</li>
- *   <li>Launch the Login window on the Event Dispatch Thread (EDT).</li>
- * </ul>
+ * <h2>Startup Sequence (Phase 1)</h2>
+ * <ol>
+ *   <li>Apply OS-native Look-and-Feel (required by AGENTS.md §6).</li>
+ *   <li>Show {@link SplashScreen} for ~2 seconds (no title bar, {@link javax.swing.JWindow}).</li>
+ *   <li>{@code SplashScreen}'s internal {@link javax.swing.Timer} dismisses itself
+ *       and opens {@link com.sims.view.LoginFrame} on the EDT.</li>
+ * </ol>
  *
- * <p><b>Design Pattern – Behavioral (Observer)</b>: This class delegates all
- * UI initialisation to {@code SwingUtilities.invokeLater}, ensuring that the
- * AWT Event Queue acts as the sole publisher of GUI-construction events and
- * that all registered ActionListeners (observers) are wired on the EDT.
+ * <h2>Design Pattern – Behavioral: Observer</h2>
+ * <p>All UI construction is wrapped in {@link SwingUtilities#invokeLater},
+ * ensuring the AWT Event Queue is the sole publisher of GUI-construction events
+ * and that all registered {@link java.awt.event.ActionListener}s (observers)
+ * are wired correctly on the EDT.</p>
  */
 public class Main {
 
     public static void main(String[] args) {
 
         // ── 1. Apply native system Look-and-Feel ────────────────────────────
+        // Must be set before any Swing component is created (AGENTS.md §6).
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
@@ -31,11 +36,7 @@ public class Main {
         }
 
         // ── 2. Bootstrap UI on the Event Dispatch Thread ─────────────────────
-        // All Swing component creation / mutation MUST happen on the EDT.
-        SwingUtilities.invokeLater(() -> {
-            // TODO (Phase 1): replace stub with LoginFrame instantiation.
-            System.out.println("SIMS – Student Information Management System");
-            System.out.println("Phase 0 scaffold running. Implement LoginFrame in Phase 1.");
-        });
+        // Phase 1: show SplashScreen; it internally schedules LoginFrame display.
+        SwingUtilities.invokeLater(SplashScreen::new);
     }
 }

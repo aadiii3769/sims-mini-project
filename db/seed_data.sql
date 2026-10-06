@@ -5,50 +5,67 @@
 -- Run    : After schema.sql — automatically via /container-entrypoint-initdb.d
 --          OR manually:  sqlplus system/admin@localhost:1521/FREEPDB1 @seed_data.sql
 -- =============================================================================
--- NOTE: Passwords are stored as plain-text ONLY in this seed script for
---       development / evaluation convenience.  Phase 1 implementation will
---       replace these with BCrypt hashes inside DBConnection bootstrap logic.
+-- Phase 1: Passwords stored as BCrypt hashes (cost factor 10).
+--   admin01   / admin@123    → $2a$10$YCcqhSEVJA1YDe1o0JoaL.5pGDqfs4JBsOusLI89JF4qzqeCDjxjm
+--   faculty01 / faculty@123  → $2a$10$pI0WT1QZe2EkX2bJpRrJK.gopC8Ib.0Pp78K6FPFPT5n510IlLjzO
+--   student*  / student@123  → $2a$10$vEbjDQRTlmHZvoYz8FjAXuevtLMvEIBb0fX65R7e9SrGjOLSDbgV.
+--   parent*   / parent@123   → $2a$10$TiimBtoeVSGdP.6FRlJKL.59iBdzq6/LKoVR4M/QB7xKgrDUjNiZm
 -- =============================================================================
 
 -- ── 1. USERS ─────────────────────────────────────────────────────────────────
--- Inserts are ordered: ADMIN → FACULTY → STUDENT → PARENT
--- USER_IDs are explicitly set to small fixed values to make FK references below
--- predictable without relying on sims_seq order.
+-- USER_IDs are explicitly set to small fixed values to make FK references
+-- in STUDENT/ATTENDANCE/MARKS/PAYMENT predictable.
 
--- Administrator
+-- Administrator (password: admin@123)
 INSERT INTO USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE)
-VALUES (1, 'admin01', 'admin@123', 'Dr. Ramesh Krishnamurthy',
+VALUES (1, 'admin01',
+        '$2a$10$YCcqhSEVJA1YDe1o0JoaL.5pGDqfs4JBsOusLI89JF4qzqeCDjxjm',
+        'Dr. Ramesh Krishnamurthy',
         'admin@sims.edu', '9876543210', 'ADMIN');
 
--- Faculty
+-- Faculty (password: faculty@123)
 INSERT INTO USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE)
-VALUES (2, 'faculty01', 'faculty@123', 'Prof. Meenakshi Sundaram',
+VALUES (2, 'faculty01',
+        '$2a$10$pI0WT1QZe2EkX2bJpRrJK.gopC8Ib.0Pp78K6FPFPT5n510IlLjzO',
+        'Prof. Meenakshi Sundaram',
         'meenakshi@sims.edu', '9876541111', 'FACULTY');
 
 INSERT INTO USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE)
-VALUES (3, 'faculty02', 'faculty@123', 'Prof. Vijayaraghavan K.',
+VALUES (3, 'faculty02',
+        '$2a$10$pI0WT1QZe2EkX2bJpRrJK.gopC8Ib.0Pp78K6FPFPT5n510IlLjzO',
+        'Prof. Vijayaraghavan K.',
         'vijay@sims.edu', '9876542222', 'FACULTY');
 
--- Students
+-- Students (password: student@123)
 INSERT INTO USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE)
-VALUES (10, 'student01', 'student@123', 'Arun Kumar S.',
+VALUES (10, 'student01',
+        '$2a$10$vEbjDQRTlmHZvoYz8FjAXuevtLMvEIBb0fX65R7e9SrGjOLSDbgV.',
+        'Arun Kumar S.',
         'arun.kumar@student.sims.edu', '9123456781', 'STUDENT');
 
 INSERT INTO USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE)
-VALUES (11, 'student02', 'student@123', 'Priya Lakshmi R.',
+VALUES (11, 'student02',
+        '$2a$10$vEbjDQRTlmHZvoYz8FjAXuevtLMvEIBb0fX65R7e9SrGjOLSDbgV.',
+        'Priya Lakshmi R.',
         'priya.lakshmi@student.sims.edu', '9123456782', 'STUDENT');
 
 INSERT INTO USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE)
-VALUES (12, 'student03', 'student@123', 'Mohammed Farhan A.',
+VALUES (12, 'student03',
+        '$2a$10$vEbjDQRTlmHZvoYz8FjAXuevtLMvEIBb0fX65R7e9SrGjOLSDbgV.',
+        'Mohammed Farhan A.',
         'farhan@student.sims.edu', '9123456783', 'STUDENT');
 
--- Parents (linked to students below)
+-- Parents (password: parent@123)
 INSERT INTO USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE)
-VALUES (20, 'parent01', 'parent@123', 'Suresh Kumar (Parent of Arun)',
+VALUES (20, 'parent01',
+        '$2a$10$TiimBtoeVSGdP.6FRlJKL.59iBdzq6/LKoVR4M/QB7xKgrDUjNiZm',
+        'Suresh Kumar (Parent of Arun)',
         'suresh.kumar@gmail.com', '9988776655', 'PARENT');
 
 INSERT INTO USERS (USER_ID, USERNAME, PASSWORD_HASH, FULL_NAME, EMAIL, PHONE, ROLE)
-VALUES (21, 'parent02', 'parent@123', 'Rajamani Lakshmi (Parent of Priya)',
+VALUES (21, 'parent02',
+        '$2a$10$TiimBtoeVSGdP.6FRlJKL.59iBdzq6/LKoVR4M/QB7xKgrDUjNiZm',
+        'Rajamani Lakshmi (Parent of Priya)',
         'rajamani.l@gmail.com', '9988776644', 'PARENT');
 
 -- ── 2. STUDENT profiles ───────────────────────────────────────────────────────
