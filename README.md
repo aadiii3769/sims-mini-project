@@ -35,68 +35,106 @@ SIMS is a **Java Swing desktop application** that automates academic administrat
 
 ## Quick Start
 
-### Step 1 — Clone the repository
+### Step 1 — Configure credentials (`.env`)
 
-```bash
-git clone <repository-url>
-cd student-information-management-system
+Copy `.env.example` to `.env`:
+
+**Windows (PowerShell):**
+```powershell
+Copy-Item .env.example .env
 ```
 
-### Step 2 — Configure credentials
-
+**Linux / macOS (Bash):**
 ```bash
-# Copy the example file and fill in your values
 cp .env.example .env
 ```
 
-The default `.env` values match the Docker Compose configuration and work
-out-of-the-box for local development:
+The default `.env` is configured to connect to the Docker container on port `1522` (to prevent port conflicts with any locally installed Oracle services on `1521`):
 
-```
-DB_URL=jdbc:oracle:thin:@localhost:1521/FREEPDB1
+```properties
+DB_URL=jdbc:oracle:thin:@localhost:1522/FREEPDB1
 DB_USER=system
 DB_PASSWORD=admin
+ORACLE_PASSWORD=admin
+ORACLE_DATABASE=FREEPDB1
 ```
 
-### Step 3 — Start Oracle Database in Docker
+---
 
-```bash
+### Step 2 — Start Oracle Database in Docker
+
+```powershell
 # Start the container in detached mode
-docker compose up -d
+docker-compose up -d
 
-# Monitor initialisation (Oracle takes ~2 minutes on first boot)
-docker logs -f sims_oracle_db
+# Check container status
+docker ps --filter "name=sims_oracle_db"
 ```
 
-Wait until you see:
+The container automatically executes `db/schema.sql` and `db/seed_data.sql` on first launch.
+
+---
+
+### Step 3 — Verify Database & Demo Users
+
+**Windows (PowerShell):**
+```powershell
+"SELECT USERNAME, ROLE FROM USERS;`nexit;" | docker exec -i sims_oracle_db sqlplus -s system/admin@FREEPDB1
 ```
-DATABASE IS READY TO USE!
-```
 
-The `db/schema.sql` and `db/seed_data.sql` scripts run **automatically** on
-first container start via the `/container-entrypoint-initdb.d` mount.
-
-### Step 4 — (Optional) Verify schema manually
-
+**Linux / macOS (Bash):**
 ```bash
-# Connect via SQL*Plus inside the container
-docker exec -it sims_oracle_db sqlplus system/admin@FREEPDB1
-
-# Inside SQL*Plus:
-SELECT TABLE_NAME FROM USER_TABLES;
-SELECT USERNAME, ROLE FROM USERS;
-EXIT;
+printf "SELECT USERNAME, ROLE FROM USERS;\nexit;" | docker exec -i sims_oracle_db sqlplus -s system/admin@FREEPDB1
 ```
 
-### Step 5 — Build and run the application
+If initialized properly, it outputs all seed users (`admin01`, `faculty01`, `student01`, etc.).
 
+---
+
+### Step 4 — Run the Application
+
+SIMS includes a bundled Maven Wrapper (`mvnw`), so a system Maven installation is not required. Ensure `JAVA_HOME` points to JDK 17+.
+
+**Windows (PowerShell):**
+```powershell
+$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-17.0.19.10-hotspot"
+.\mvnw.cmd exec:java
+```
+
+*(Or use the local Maven binary directly: `.\maven\bin\mvn.cmd exec:java`)*
+
+**Linux / macOS (Bash):**
 ```bash
-# Compile all sources and resolve dependencies
-mvn compile
-
-# Launch the Swing application
-mvn exec:java
+./mvnw exec:java
 ```
+
+---
+
+### Step 5 — Testing User Logins
+
+Once launched, the splash screen will open, followed by the Login dialog. Test with the pre-seeded accounts:
+
+| Role | Username | Password | Expected Behaviour |
+|---|---|---|---|
+| **Administrator** | `admin01` | `admin@123` | Loads Admin Dashboard stub |
+| **Faculty** | `faculty01` | `faculty@123` | Loads Faculty Dashboard stub |
+| **Student** | `student01` | `student@123` | Loads Student Dashboard stub |
+| **Parent** | `parent01` | `parent@123` | Loads Parent Dashboard stub |
+| **Validation test** | *(empty)* | *(empty)* | Red highlight on required fields |
+| **Negative test** | `admin01` | `wrongpass` | Dialog: *"Invalid username or password"* |
+
+---
+
+### Step 6 — Stopping the Application & Database
+
+* **To stop the Java application**:
+  * Close the desktop GUI window (click **✕** in the title bar), OR
+  * Press `Ctrl + C` in the PowerShell terminal running Maven.
+* **To stop the Oracle database container**:
+  ```powershell
+  docker-compose down
+  ```
+  *(Data remains persisted in the `oracle-data` volume)*
 
 ---
 
