@@ -180,8 +180,6 @@ See [`docs/TECH_STACK.md`](docs/TECH_STACK.md) for full specification tables.
 
 ## GitHub Repository
 
-> Replace with your actual repository URL before submission.
-
 ```
-https://github.com/<your-username>/sims-java
+https://github.com/aadiii3769/sims-mini-project.git
 ```
