@@ -2,6 +2,7 @@ package com.sims.factory;
 
 import com.sims.model.User;
 import com.sims.model.UserRole;
+import com.sims.view.admin.AdminDashboard;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -56,11 +57,10 @@ public final class DashboardFactory {
         };
     }
 
-    // ── Private factory methods (stubs — replaced in Phase 1–5) ─────────────
+    // ── Private factory methods ──────────────────────────────────────────────
 
     private static JFrame createAdminDashboard(User user) {
-        // TODO (Phase 1): return new AdminDashboard(user);
-        return buildStubFrame("Administrator Dashboard", user);
+        return new AdminDashboard(user);   // Phase 2: full implementation
     }
 
     private static JFrame createFacultyDashboard(User user) {
