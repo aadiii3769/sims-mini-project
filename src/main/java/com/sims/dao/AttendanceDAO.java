@@ -44,7 +44,16 @@ public class AttendanceDAO {
         "       JOIN STUDENT s ON a.STUDENT_ID = s.STUDENT_ID " +
         "       JOIN USERS u ON s.USER_ID = u.USER_ID " +
         "WHERE  a.STUDENT_ID = ? AND a.SUBJECT = ? " +
-        "ORDER BY a.LOG_DATE DESC";
+        "ORDER BY a.LOG_DATE DESC, a.LOG_ID DESC";
+
+    private static final String SQL_FIND_BY_STUDENT =
+        "SELECT a.LOG_ID, a.STUDENT_ID, a.FACULTY_ID, a.SUBJECT, a.LOG_DATE, " +
+        "       a.STATUS, a.REMARKS, u.FULL_NAME " +
+        "FROM   ATTENDANCE a " +
+        "       JOIN STUDENT s ON a.STUDENT_ID = s.STUDENT_ID " +
+        "       JOIN USERS u ON s.USER_ID = u.USER_ID " +
+        "WHERE  a.STUDENT_ID = ? " +
+        "ORDER BY a.LOG_DATE DESC, a.LOG_ID DESC";
 
     private static final String SQL_MONTHLY_SUMMARY =
         "SELECT SUM(CASE WHEN STATUS IN ('PRESENT', 'OD') THEN 1 ELSE 0 END) AS PRESENT_COUNT, " +
@@ -78,18 +87,36 @@ public class AttendanceDAO {
         }
     }
 
-    public List<Attendance> findByStudentAndSubject(long studentId, String subject) throws SQLException {
+    public List<Attendance> findByStudent(long studentId, String subject, Integer limit) throws SQLException {
+        boolean filterSubject = subject != null
+                && !subject.isBlank()
+                && !"ALL".equalsIgnoreCase(subject.trim())
+                && !"All Subjects".equalsIgnoreCase(subject.trim());
+        String sql = filterSubject ? SQL_FIND_BY_STUDENT_SUBJECT : SQL_FIND_BY_STUDENT;
+
         List<Attendance> attendanceList = new ArrayList<>();
-        try (PreparedStatement ps = conn.prepareStatement(SQL_FIND_BY_STUDENT_SUBJECT)) {
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (limit != null && limit > 0) {
+                ps.setMaxRows(limit);
+            }
             ps.setLong(1, studentId);
-            ps.setString(2, subject);
+            if (filterSubject) {
+                ps.setString(2, subject.trim());
+            }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     attendanceList.add(mapRow(rs));
+                    if (limit != null && limit > 0 && attendanceList.size() >= limit) {
+                        break;
+                    }
                 }
             }
         }
         return attendanceList;
+    }
+
+    public List<Attendance> findByStudentAndSubject(long studentId, String subject) throws SQLException {
+        return findByStudent(studentId, subject, null);
     }
 
     public int[] getMonthlySummary(long studentId, String subject, int month, int year) throws SQLException {

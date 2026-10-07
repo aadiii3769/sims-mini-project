@@ -60,8 +60,12 @@ public class AttendanceController {
     }
 
     public List<Attendance> getAttendanceHistory(long studentId, String subject) {
+        return getAttendanceHistory(studentId, subject, null);
+    }
+
+    public List<Attendance> getAttendanceHistory(long studentId, String subject, Integer limit) {
         try {
-            return attendanceDAO.findByStudentAndSubject(studentId, subject);
+            return attendanceDAO.findByStudent(studentId, subject, limit);
         } catch (SQLException e) {
             throw new RuntimeException("Attendance history lookup failed: " + e.getMessage(), e);
         }
