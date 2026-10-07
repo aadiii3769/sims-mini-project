@@ -6,6 +6,7 @@ import com.sims.model.Student;
 import com.sims.model.User;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellEditor;
@@ -63,7 +64,8 @@ public class PaymentPanel extends JPanel {
         this.studentLabel      = new JLabel("Loading student profile...");
         this.outstandingLabel  = new JLabel("Outstanding: Rs —");
         this.statusLabel       = new JLabel("Loading fee records...");
-        this.paySelectedBtn    = new JButton("Pay Selected");
+        this.paySelectedBtn    = createStyledButton("Pay Selected", new Color(25, 120, 40), new Color(35, 150, 50));
+        this.paySelectedBtn.setEnabled(false);
 
         buildUI();
         loadStudentAndFees();
@@ -84,23 +86,18 @@ public class PaymentPanel extends JPanel {
 
         JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
 
-        paySelectedBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
-        paySelectedBtn.setBackground(new Color(25, 120, 40));
-        paySelectedBtn.setForeground(Color.WHITE);
-        paySelectedBtn.setFocusPainted(false);
         paySelectedBtn.addActionListener(e -> {
             int row = table.getSelectedRow();
             if (row >= 0) {
                 handleRowAction(row);
             } else {
                 JOptionPane.showMessageDialog(this,
-                    "Please select an invoice row to pay.",
+                    "Please select an invoice row from the table first.",
                     "No Invoice Selected", JOptionPane.INFORMATION_MESSAGE);
             }
         });
 
-        JButton refresh = new JButton("Refresh");
-        refresh.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        JButton refresh = createStyledButton("Refresh", new Color(60, 75, 95), new Color(80, 95, 115));
         refresh.addActionListener(e -> refreshFees());
 
         right.add(paySelectedBtn);
@@ -133,21 +130,57 @@ public class PaymentPanel extends JPanel {
 
     private JTable buildTable() {
         JTable t = new JTable(tableModel);
-        t.setRowHeight(32);
+        t.setRowHeight(34);
         t.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 12));
+        t.setFont(new Font("SansSerif", Font.PLAIN, 12));
         t.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        t.setShowGrid(true);
+        t.setGridColor(new Color(230, 233, 238));
 
-        // Custom status-aware renderer for standard columns
-        StatusRowRenderer statusRenderer = new StatusRowRenderer();
-        for (int i = 0; i < 8; i++) {
-            t.getColumnModel().getColumn(i).setCellRenderer(statusRenderer);
-        }
+        // Assign dedicated, contrast-rich cell renderers
+        TableCellRenderer textRenderer = new CleanDataCellRenderer(SwingConstants.LEFT);
+        TableCellRenderer numRenderer  = new CleanDataCellRenderer(SwingConstants.RIGHT);
+        TableCellRenderer centerRenderer = new CleanDataCellRenderer(SwingConstants.CENTER);
+        TableCellRenderer statusRenderer = new StatusBadgeRenderer();
+
+        t.getColumnModel().getColumn(0).setCellRenderer(textRenderer);     // Type
+        t.getColumnModel().getColumn(1).setCellRenderer(numRenderer);      // Due
+        t.getColumnModel().getColumn(2).setCellRenderer(numRenderer);      // Paid
+        t.getColumnModel().getColumn(3).setCellRenderer(numRenderer);      // Outstanding
+        t.getColumnModel().getColumn(4).setCellRenderer(statusRenderer);   // Status
+        t.getColumnModel().getColumn(5).setCellRenderer(centerRenderer);   // Due Date
+        t.getColumnModel().getColumn(6).setCellRenderer(centerRenderer);   // Mode
+        t.getColumnModel().getColumn(7).setCellRenderer(centerRenderer);   // Receipt No
 
         // Action column with custom button renderer and editor
         ActionCellRendererEditor actionHandler = new ActionCellRendererEditor();
         t.getColumnModel().getColumn(8).setCellRenderer(actionHandler);
         t.getColumnModel().getColumn(8).setCellEditor(actionHandler);
-        t.getColumnModel().getColumn(8).setPreferredWidth(120);
+        t.getColumnModel().getColumn(8).setPreferredWidth(130);
+
+        // Update toolbar button when selection changes
+        t.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                int row = t.getSelectedRow();
+                if (row >= 0 && currentPayments != null && row < currentPayments.size()) {
+                    Payment p = currentPayments.get(row);
+                    if ("PAID".equalsIgnoreCase(p.getPaymentStatus())) {
+                        paySelectedBtn.setText("View Receipt");
+                        paySelectedBtn.setEnabled(true);
+                    } else if ("PENDING".equalsIgnoreCase(p.getPaymentStatus()) || "PARTIAL".equalsIgnoreCase(p.getPaymentStatus())) {
+                        paySelectedBtn.setText("Pay Selected");
+                        paySelectedBtn.setEnabled(true);
+                    } else {
+                        paySelectedBtn.setText("Pay Selected");
+                        paySelectedBtn.setEnabled(false);
+                    }
+                } else {
+                    paySelectedBtn.setText("Pay Selected");
+                    paySelectedBtn.setEnabled(false);
+                }
+                paySelectedBtn.repaint();
+            }
+        });
 
         // Double-click row shortcut
         t.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -272,11 +305,18 @@ public class PaymentPanel extends JPanel {
 
     private void promptAndProcessPayment(Payment p) {
         BigDecimal balance = p.getOutstandingBalance();
+        if (balance.compareTo(BigDecimal.ZERO) <= 0) {
+            JOptionPane.showMessageDialog(this,
+                "This invoice has no outstanding balance to pay.",
+                "Zero Balance", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
         String amtStr = JOptionPane.showInputDialog(this,
             "Invoice: " + p.getFeeType() + "\n"
             + "Total Due: Rs. " + String.format("%.2f", p.getAmountDue()) + "\n"
             + "Already Paid: Rs. " + String.format("%.2f", p.getAmountPaid()) + "\n"
-            + "Outstanding: Rs. " + String.format("%.2f", balance) + "\n\n"
+            + "Outstanding Balance: Rs. " + String.format("%.2f", balance) + "\n\n"
             + "Enter payment amount:",
             String.format("%.2f", balance));
 
@@ -289,10 +329,10 @@ public class PaymentPanel extends JPanel {
                 throw new NumberFormatException();
             }
             if (amount.compareTo(balance) > 0) {
-                int confirm = JOptionPane.showConfirmDialog(this,
-                    "Entered amount (Rs. " + amount + ") exceeds current balance (Rs. " + balance + "). Proceed?",
-                    "Confirm Overpayment", JOptionPane.YES_NO_OPTION);
-                if (confirm != JOptionPane.YES_OPTION) return;
+                JOptionPane.showMessageDialog(this,
+                    "Payment cannot exceed current outstanding balance (Rs. " + String.format("%.2f", balance) + ").",
+                    "Excess Amount", JOptionPane.WARNING_MESSAGE);
+                return;
             }
         } catch (NumberFormatException ex) {
             JOptionPane.showMessageDialog(this,
@@ -321,11 +361,12 @@ public class PaymentPanel extends JPanel {
                 try {
                     String receiptNo = get();
                     // Update model copy for immediate receipt display
-                    p.setAmountPaid(finalAmount);
+                    BigDecimal newPaid = p.getAmountPaid().add(finalAmount);
+                    p.setAmountPaid(newPaid);
                     p.setPaymentMode(finalMode);
                     p.setReceiptNumber(receiptNo);
                     p.setPaymentDate(java.time.LocalDate.now());
-                    p.setPaymentStatus(finalAmount.compareTo(p.getAmountDue()) >= 0 ? "PAID" : "PARTIAL");
+                    p.setPaymentStatus(newPaid.compareTo(p.getAmountDue()) >= 0 ? "PAID" : "PARTIAL");
                     p.setStudentName(currentStudent != null ? currentStudent.getFullName() : "");
 
                     refreshFees();
@@ -352,24 +393,105 @@ public class PaymentPanel extends JPanel {
         rd.setVisible(true);
     }
 
+    // ── Custom Painted Buttons (Cross-L&F Compatible) ──────────────────────────
+
+    /**
+     * Creates a custom painted button with anti-aliasing, rounded corners,
+     * and rollover/press states that works reliably across all Swing Look and Feels
+     * (especially Windows L&F where default JButtons ignore setBackground with white text).
+     */
+    private JButton createStyledButton(String text, Color normalColor, Color hoverColor) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Color fill;
+                if (!isEnabled()) {
+                    fill = new Color(225, 228, 232);
+                    setForeground(new Color(145, 150, 160));
+                } else if (getModel().isPressed()) {
+                    fill = normalColor.darker();
+                    setForeground(Color.WHITE);
+                } else if (getModel().isRollover()) {
+                    fill = hoverColor;
+                    setForeground(Color.WHITE);
+                } else {
+                    fill = normalColor;
+                    setForeground(Color.WHITE);
+                }
+                g2.setColor(fill);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(new Font("SansSerif", Font.BOLD, 12));
+        btn.setForeground(Color.WHITE);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setOpaque(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
+        return btn;
+    }
+
     // ── Table Renderers & Editors ──────────────────────────────────────────────
 
-    /** Status row color coding. */
-    private static class StatusRowRenderer extends DefaultTableCellRenderer {
+    /** Renders data columns with high-contrast text and subtle row striping. */
+    private static class CleanDataCellRenderer extends DefaultTableCellRenderer {
+        public CleanDataCellRenderer(int horizontalAlignment) {
+            setHorizontalAlignment(horizontalAlignment);
+            setBorder(new EmptyBorder(0, 8, 0, 8));
+        }
+
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                 boolean isSelected, boolean hasFocus, int row, int col) {
-            Component c = super.getTableCellRendererComponent(
-                    table, value, isSelected, hasFocus, row, col);
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
             if (!isSelected) {
-                Object statusVal = table.getModel().getValueAt(row, 4);
-                String status = statusVal == null ? "" : statusVal.toString();
-                switch (status.toUpperCase()) {
-                    case "PAID"    -> { c.setBackground(new Color(230, 248, 230)); c.setForeground(new Color(25, 100, 30)); }
-                    case "PENDING" -> { c.setBackground(new Color(255, 248, 225)); c.setForeground(new Color(140, 80, 0)); }
-                    case "PARTIAL" -> { c.setBackground(new Color(255, 240, 215)); c.setForeground(new Color(150, 70, 0)); }
-                    case "WAIVED"  -> { c.setBackground(new Color(245, 245, 245)); c.setForeground(Color.GRAY); }
-                    default        -> { c.setBackground(Color.WHITE); c.setForeground(Color.BLACK); }
+                c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(248, 250, 253));
+                c.setForeground(new Color(30, 35, 45));
+            }
+            return c;
+        }
+    }
+
+    /** Status column badge renderer with rich, distinct status colors. */
+    private static class StatusBadgeRenderer extends DefaultTableCellRenderer {
+        public StatusBadgeRenderer() {
+            setHorizontalAlignment(SwingConstants.CENTER);
+            setFont(new Font("SansSerif", Font.BOLD, 11));
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int col) {
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
+            if (!isSelected) {
+                String status = value == null ? "" : value.toString().toUpperCase();
+                switch (status) {
+                    case "PAID" -> {
+                        c.setBackground(new Color(225, 246, 228));
+                        c.setForeground(new Color(20, 110, 35));
+                    }
+                    case "PENDING" -> {
+                        c.setBackground(new Color(254, 243, 215));
+                        c.setForeground(new Color(160, 85, 0));
+                    }
+                    case "PARTIAL" -> {
+                        c.setBackground(new Color(254, 236, 210));
+                        c.setForeground(new Color(175, 75, 0));
+                    }
+                    case "WAIVED" -> {
+                        c.setBackground(new Color(240, 242, 245));
+                        c.setForeground(new Color(110, 115, 125));
+                    }
+                    default -> {
+                        c.setBackground(Color.WHITE);
+                        c.setForeground(Color.BLACK);
+                    }
                 }
             }
             return c;
@@ -378,19 +500,20 @@ public class PaymentPanel extends JPanel {
 
     /**
      * Action column button renderer and editor.
-     * Renders a styled button for each row and handles clicks.
+     * Custom paints vibrant, accessible action buttons (Green "Pay Now" and Blue "View Receipt")
+     * that render beautifully across all Swing Look and Feels.
      */
     private class ActionCellRendererEditor extends AbstractCellEditor
             implements TableCellRenderer, TableCellEditor {
 
-        private final JButton button;
+        private final TableActionButton renderButton;
+        private final TableActionButton editorButton;
         private int currentRow = -1;
 
         public ActionCellRendererEditor() {
-            this.button = new JButton();
-            this.button.setFont(new Font("SansSerif", Font.BOLD, 11));
-            this.button.setFocusPainted(false);
-            this.button.addActionListener(e -> {
+            this.renderButton = new TableActionButton();
+            this.editorButton = new TableActionButton();
+            this.editorButton.addActionListener(e -> {
                 fireEditingStopped();
                 if (currentRow >= 0) {
                     handleRowAction(currentRow);
@@ -398,44 +521,87 @@ public class PaymentPanel extends JPanel {
             });
         }
 
-        private void configureButton(Object value) {
+        private void configureButton(TableActionButton btn, Object value) {
             String text = value != null ? value.toString() : "Action";
-            button.setText(text);
+            btn.setText(text);
             if ("Pay Now".equals(text)) {
-                button.setBackground(new Color(30, 130, 50));
-                button.setForeground(Color.WHITE);
+                btn.setColors(new Color(25, 125, 45), new Color(35, 150, 55));
             } else if ("View Receipt".equals(text)) {
-                button.setBackground(new Color(30, 85, 160));
-                button.setForeground(Color.WHITE);
+                btn.setColors(new Color(30, 95, 175), new Color(45, 115, 205));
             } else {
-                button.setBackground(new Color(220, 225, 230));
-                button.setForeground(Color.DARK_GRAY);
+                btn.setColors(new Color(200, 205, 215), new Color(185, 190, 200));
             }
         }
 
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                 boolean isSelected, boolean hasFocus, int row, int column) {
-            configureButton(value);
-            return button;
+            configureButton(renderButton, value);
+            return renderButton;
         }
 
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value,
                 boolean isSelected, int row, int column) {
             this.currentRow = row;
-            configureButton(value);
-            return button;
+            configureButton(editorButton, value);
+            return editorButton;
         }
 
         @Override
         public Object getCellEditorValue() {
-            return button.getText();
+            return editorButton.getText();
         }
 
         @Override
         public boolean isCellEditable(EventObject e) {
             return true;
+        }
+    }
+
+    /** Custom painted table button with high visibility and hover states. */
+    private static class TableActionButton extends JButton {
+        private Color normalColor = new Color(25, 125, 45);
+        private Color hoverColor  = new Color(35, 150, 55);
+
+        public TableActionButton() {
+            setFont(new Font("SansSerif", Font.BOLD, 11));
+            setForeground(Color.WHITE);
+            setContentAreaFilled(false);
+            setBorderPainted(false);
+            setFocusPainted(false);
+            setOpaque(false);
+            setCursor(new Cursor(Cursor.HAND_CURSOR));
+            setBorder(BorderFactory.createEmptyBorder(2, 6, 2, 6));
+        }
+
+        public void setColors(Color normal, Color hover) {
+            this.normalColor = normal;
+            this.hoverColor  = hover;
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            Color fill;
+            if (!isEnabled()) {
+                fill = new Color(225, 228, 232);
+                setForeground(new Color(145, 150, 160));
+            } else if (getModel().isPressed()) {
+                fill = normalColor.darker();
+                setForeground(Color.WHITE);
+            } else if (getModel().isRollover()) {
+                fill = hoverColor;
+                setForeground(Color.WHITE);
+            } else {
+                fill = normalColor;
+                setForeground(Color.WHITE);
+            }
+            g2.setColor(fill);
+            g2.fillRoundRect(4, 3, getWidth() - 8, getHeight() - 6, 6, 6);
+            g2.dispose();
+            super.paintComponent(g);
         }
     }
 }

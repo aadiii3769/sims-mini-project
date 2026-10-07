@@ -12,6 +12,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -85,8 +86,10 @@ public class FeeManagementPanel extends JPanel {
         this.invoiceTable      = new JTable(invoiceTableModel);
         this.studentBannerLabel= new JLabel("Select a student to view fee details");
         this.outstandingLabel  = new JLabel("Outstanding: Rs 0.00");
-        this.createInvoiceBtn  = new JButton("Create Invoice");
-        this.refreshInvoicesBtn= new JButton("Refresh");
+        this.createInvoiceBtn  = createStyledButton("Create Invoice", new Color(25, 120, 45), new Color(35, 145, 55));
+        this.createInvoiceBtn.setEnabled(false);
+        this.refreshInvoicesBtn= createStyledButton("Refresh", new Color(60, 75, 95), new Color(80, 95, 115));
+        this.refreshInvoicesBtn.setEnabled(false);
 
         buildUI();
         loadStudents("");
@@ -120,11 +123,11 @@ public class FeeManagementPanel extends JPanel {
         JPanel searchBar = new JPanel(new BorderLayout(6, 0));
         searchBar.setBorder(new EmptyBorder(4, 4, 4, 4));
 
-        JButton searchBtn = new JButton("Search");
+        JButton searchBtn = createStyledButton("Search", new Color(45, 90, 160), new Color(60, 110, 185));
         searchBtn.addActionListener(e -> loadStudents(searchField.getText().trim()));
         searchField.addActionListener(e -> loadStudents(searchField.getText().trim()));
 
-        JButton showAllBtn = new JButton("All");
+        JButton showAllBtn = createStyledButton("All", new Color(90, 100, 115), new Color(110, 120, 135));
         showAllBtn.addActionListener(e -> {
             searchField.setText("");
             loadStudents("");
@@ -140,8 +143,12 @@ public class FeeManagementPanel extends JPanel {
 
         // Student table
         studentTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        studentTable.setRowHeight(24);
+        studentTable.setRowHeight(26);
         studentTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 11));
+        studentTable.setShowGrid(true);
+        studentTable.setGridColor(new Color(230, 233, 238));
+        studentTable.setDefaultRenderer(Object.class, new CleanDataCellRenderer(SwingConstants.LEFT));
+
         studentTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int row = studentTable.getSelectedRow();
@@ -179,15 +186,7 @@ public class FeeManagementPanel extends JPanel {
 
         JPanel actionBtns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
 
-        createInvoiceBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
-        createInvoiceBtn.setBackground(new Color(25, 115, 45));
-        createInvoiceBtn.setForeground(Color.WHITE);
-        createInvoiceBtn.setFocusPainted(false);
-        createInvoiceBtn.setEnabled(false);
         createInvoiceBtn.addActionListener(e -> openCreateInvoiceDialog());
-
-        refreshInvoicesBtn.setFont(new Font("SansSerif", Font.PLAIN, 12));
-        refreshInvoicesBtn.setEnabled(false);
         refreshInvoicesBtn.addActionListener(e -> {
             if (selectedStudent != null) {
                 loadInvoicesForStudent(selectedStudent);
@@ -202,9 +201,26 @@ public class FeeManagementPanel extends JPanel {
 
         // Invoice table
         invoiceTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        invoiceTable.setRowHeight(26);
+        invoiceTable.setRowHeight(28);
         invoiceTable.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 11));
-        invoiceTable.setDefaultRenderer(Object.class, new InvoiceStatusRenderer());
+        invoiceTable.setShowGrid(true);
+        invoiceTable.setGridColor(new Color(230, 233, 238));
+
+        TableCellRenderer textRenderer   = new CleanDataCellRenderer(SwingConstants.LEFT);
+        TableCellRenderer numRenderer    = new CleanDataCellRenderer(SwingConstants.RIGHT);
+        TableCellRenderer centerRenderer = new CleanDataCellRenderer(SwingConstants.CENTER);
+        TableCellRenderer statusRenderer = new StatusBadgeRenderer();
+
+        invoiceTable.getColumnModel().getColumn(0).setCellRenderer(centerRenderer); // Tx ID
+        invoiceTable.getColumnModel().getColumn(1).setCellRenderer(textRenderer);   // Fee Type
+        invoiceTable.getColumnModel().getColumn(2).setCellRenderer(numRenderer);    // Due
+        invoiceTable.getColumnModel().getColumn(3).setCellRenderer(numRenderer);    // Paid
+        invoiceTable.getColumnModel().getColumn(4).setCellRenderer(numRenderer);    // Balance
+        invoiceTable.getColumnModel().getColumn(5).setCellRenderer(statusRenderer); // Status
+        invoiceTable.getColumnModel().getColumn(6).setCellRenderer(centerRenderer); // Due Date
+        invoiceTable.getColumnModel().getColumn(7).setCellRenderer(centerRenderer); // Paid Date
+        invoiceTable.getColumnModel().getColumn(8).setCellRenderer(centerRenderer); // Mode
+        invoiceTable.getColumnModel().getColumn(9).setCellRenderer(centerRenderer); // Receipt No
 
         // Double-click to view receipt if PAID
         invoiceTable.addMouseListener(new java.awt.event.MouseAdapter() {
@@ -253,7 +269,9 @@ public class FeeManagementPanel extends JPanel {
                     if (loadedStudents.isEmpty()) {
                         selectedStudent = null;
                         createInvoiceBtn.setEnabled(false);
+                        createInvoiceBtn.repaint();
                         refreshInvoicesBtn.setEnabled(false);
+                        refreshInvoicesBtn.repaint();
                         invoiceTableModel.setRowCount(0);
                         studentBannerLabel.setText("No students match search criteria.");
                         outstandingLabel.setText("Outstanding: Rs 0.00");
@@ -270,7 +288,9 @@ public class FeeManagementPanel extends JPanel {
     private void onStudentSelected(Student s) {
         studentBannerLabel.setText("Student: " + s.getRollNumber() + " — " + s.getFullName() + " (" + s.getDepartment() + ")");
         createInvoiceBtn.setEnabled(true);
+        createInvoiceBtn.repaint();
         refreshInvoicesBtn.setEnabled(true);
+        refreshInvoicesBtn.repaint();
         loadInvoicesForStudent(s);
     }
 
@@ -320,7 +340,7 @@ public class FeeManagementPanel extends JPanel {
         }
 
         JDialog dialog = new JDialog(parentFrame, "Create Fee Invoice", true);
-        dialog.setSize(440, 360);
+        dialog.setSize(440, 370);
         dialog.setResizable(false);
         dialog.setLocationRelativeTo(this);
         dialog.setLayout(new BorderLayout());
@@ -378,13 +398,8 @@ public class FeeManagementPanel extends JPanel {
 
         // Buttons
         JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 8));
-        JButton saveBtn = new JButton("Save Invoice");
-        saveBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
-        saveBtn.setBackground(new Color(25, 115, 45));
-        saveBtn.setForeground(Color.WHITE);
-        saveBtn.setFocusPainted(false);
-
-        JButton cancelBtn = new JButton("Cancel");
+        JButton saveBtn = createStyledButton("Save Invoice", new Color(25, 120, 45), new Color(35, 145, 55));
+        JButton cancelBtn = createStyledButton("Cancel", new Color(110, 115, 125), new Color(130, 135, 145));
         cancelBtn.addActionListener(e -> dialog.dispose());
 
         saveBtn.addActionListener(e -> {
@@ -414,6 +429,7 @@ public class FeeManagementPanel extends JPanel {
             invoice.setRemarks(remarksField.getText().trim());
 
             saveBtn.setEnabled(false);
+            saveBtn.repaint();
             new SwingWorker<Void, Void>() {
                 @Override
                 protected Void doInBackground() {
@@ -431,6 +447,7 @@ public class FeeManagementPanel extends JPanel {
                         loadInvoicesForStudent(selectedStudent);
                     } catch (Exception ex) {
                         saveBtn.setEnabled(true);
+                        saveBtn.repaint();
                         JOptionPane.showMessageDialog(dialog,
                             "Failed to create invoice:\n" + ex.getMessage(),
                             "Error", JOptionPane.ERROR_MESSAGE);
@@ -447,23 +464,96 @@ public class FeeManagementPanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    // ── Table Cell Renderer ──────────────────────────────────────────────────
+    // ── Button and Table Helpers ─────────────────────────────────────────────
 
-    private static class InvoiceStatusRenderer extends DefaultTableCellRenderer {
+    private JButton createStyledButton(String text, Color normalColor, Color hoverColor) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Color fill;
+                if (!isEnabled()) {
+                    fill = new Color(225, 228, 232);
+                    setForeground(new Color(145, 150, 160));
+                } else if (getModel().isPressed()) {
+                    fill = normalColor.darker();
+                    setForeground(Color.WHITE);
+                } else if (getModel().isRollover()) {
+                    fill = hoverColor;
+                    setForeground(Color.WHITE);
+                } else {
+                    fill = normalColor;
+                    setForeground(Color.WHITE);
+                }
+                g2.setColor(fill);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(new Font("SansSerif", Font.BOLD, 12));
+        btn.setForeground(Color.WHITE);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setOpaque(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
+        return btn;
+    }
+
+    private static class CleanDataCellRenderer extends DefaultTableCellRenderer {
+        public CleanDataCellRenderer(int horizontalAlignment) {
+            setHorizontalAlignment(horizontalAlignment);
+            setBorder(new EmptyBorder(0, 8, 0, 8));
+        }
+
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                 boolean isSelected, boolean hasFocus, int row, int col) {
-            Component c = super.getTableCellRendererComponent(
-                    table, value, isSelected, hasFocus, row, col);
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
             if (!isSelected) {
-                Object statusVal = table.getModel().getValueAt(row, 5);
-                String status = statusVal != null ? statusVal.toString().toUpperCase() : "";
+                c.setBackground(row % 2 == 0 ? Color.WHITE : new Color(248, 250, 253));
+                c.setForeground(new Color(30, 35, 45));
+            }
+            return c;
+        }
+    }
+
+    private static class StatusBadgeRenderer extends DefaultTableCellRenderer {
+        public StatusBadgeRenderer() {
+            setHorizontalAlignment(SwingConstants.CENTER);
+            setFont(new Font("SansSerif", Font.BOLD, 11));
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int col) {
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, col);
+            if (!isSelected) {
+                String status = value == null ? "" : value.toString().toUpperCase();
                 switch (status) {
-                    case "PAID"    -> { c.setBackground(new Color(230, 248, 230)); c.setForeground(new Color(25, 100, 30)); }
-                    case "PENDING" -> { c.setBackground(new Color(255, 248, 225)); c.setForeground(new Color(140, 80, 0)); }
-                    case "PARTIAL" -> { c.setBackground(new Color(255, 240, 215)); c.setForeground(new Color(150, 70, 0)); }
-                    case "WAIVED"  -> { c.setBackground(new Color(245, 245, 245)); c.setForeground(Color.GRAY); }
-                    default        -> { c.setBackground(Color.WHITE); c.setForeground(Color.BLACK); }
+                    case "PAID" -> {
+                        c.setBackground(new Color(225, 246, 228));
+                        c.setForeground(new Color(20, 110, 35));
+                    }
+                    case "PENDING" -> {
+                        c.setBackground(new Color(254, 243, 215));
+                        c.setForeground(new Color(160, 85, 0));
+                    }
+                    case "PARTIAL" -> {
+                        c.setBackground(new Color(254, 236, 210));
+                        c.setForeground(new Color(175, 75, 0));
+                    }
+                    case "WAIVED" -> {
+                        c.setBackground(new Color(240, 242, 245));
+                        c.setForeground(new Color(110, 115, 125));
+                    }
+                    default -> {
+                        c.setBackground(Color.WHITE);
+                        c.setForeground(Color.BLACK);
+                    }
                 }
             }
             return c;

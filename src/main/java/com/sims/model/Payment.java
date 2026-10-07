@@ -70,6 +70,11 @@ public class Payment {
      * Computed at runtime — not persisted (3NF).
      */
     public BigDecimal getOutstandingBalance() {
+        if (amountDue == null) return BigDecimal.ZERO;
+        if (amountPaid == null) return amountDue;
+        if (amountPaid.compareTo(amountDue) >= 0) {
+            return BigDecimal.ZERO;
+        }
         return amountDue.subtract(amountPaid);
     }
 }

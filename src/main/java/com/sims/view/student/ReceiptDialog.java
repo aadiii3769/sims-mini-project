@@ -165,20 +165,52 @@ public class ReceiptDialog extends JDialog {
         bar.setBackground(new Color(245, 247, 250));
         bar.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(220, 225, 230)));
 
-        JButton printBtn = new JButton("Print Receipt");
-        printBtn.setFont(new Font("SansSerif", Font.BOLD, 12));
-        printBtn.setBackground(new Color(30, 85, 155));
-        printBtn.setForeground(Color.WHITE);
-        printBtn.setFocusPainted(false);
+        JButton printBtn = createStyledButton("Print Receipt", new Color(30, 85, 155), new Color(45, 105, 185));
         printBtn.addActionListener(e -> handlePrint());
 
-        JButton closeBtn = new JButton("Close");
-        closeBtn.setFont(new Font("SansSerif", Font.PLAIN, 12));
+        JButton closeBtn = createStyledButton("Close", new Color(110, 115, 125), new Color(130, 135, 145));
         closeBtn.addActionListener(e -> dispose());
 
         bar.add(printBtn);
         bar.add(closeBtn);
         return bar;
+    }
+
+    private JButton createStyledButton(String text, Color normalColor, Color hoverColor) {
+        JButton btn = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Color fill;
+                if (!isEnabled()) {
+                    fill = new Color(225, 228, 232);
+                    setForeground(new Color(145, 150, 160));
+                } else if (getModel().isPressed()) {
+                    fill = normalColor.darker();
+                    setForeground(Color.WHITE);
+                } else if (getModel().isRollover()) {
+                    fill = hoverColor;
+                    setForeground(Color.WHITE);
+                } else {
+                    fill = normalColor;
+                    setForeground(Color.WHITE);
+                }
+                g2.setColor(fill);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(new Font("SansSerif", Font.BOLD, 12));
+        btn.setForeground(Color.WHITE);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setOpaque(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
+        return btn;
     }
 
     private void handlePrint() {

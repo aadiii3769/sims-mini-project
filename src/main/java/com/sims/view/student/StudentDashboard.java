@@ -13,11 +13,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
 import javax.swing.SwingUtilities;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
+import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
@@ -73,8 +69,7 @@ public class StudentDashboard extends JFrame {
         JLabel userLabel = new JLabel("Logged in as: " + loggedInUser.getFullName() + "  |  Role: STUDENT");
         userLabel.setFont(new Font("SansSerif", Font.PLAIN, 12));
         userLabel.setForeground(new Color(180, 210, 255));
-        JButton logoutButton = new JButton("Logout");
-        logoutButton.addActionListener(e -> handleLogout());
+        JButton logoutButton = createLogoutButton();
         rightPanel.add(userLabel);
         rightPanel.add(logoutButton);
 
@@ -105,6 +100,38 @@ public class StudentDashboard extends JFrame {
             dispose();
             SwingUtilities.invokeLater(() -> new LoginFrame().setVisible(true));
         }
+    }
+
+    private JButton createLogoutButton() {
+        JButton btn = new JButton("Logout") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                Color fill;
+                if (getModel().isPressed()) {
+                    fill = new Color(160, 35, 35);
+                } else if (getModel().isRollover()) {
+                    fill = new Color(215, 55, 55);
+                } else {
+                    fill = new Color(190, 45, 45);
+                }
+                g2.setColor(fill);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 6, 6);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        btn.setFont(new Font("SansSerif", Font.BOLD, 12));
+        btn.setForeground(Color.WHITE);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setOpaque(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createEmptyBorder(5, 12, 5, 12));
+        btn.addActionListener(e -> handleLogout());
+        return btn;
     }
 
     private void registerShutdownHook() {
