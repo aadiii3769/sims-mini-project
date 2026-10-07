@@ -12,9 +12,9 @@ import java.util.Optional;
 /**
  * Data Access Object for the {@code STUDENT} table.
  *
- * <p>All SQL is encapsulated here; controllers receive and submit
- * {@link Student} POJOs only. See {@link UserDAO} class Javadoc for
- * the full DAO pattern academic justification.
+ * <h2>Design Pattern – Structural: Data Access Object (DAO)</h2>
+ * <p><b>Academic Justification</b>: Encapsulates all query and persistence logic
+ * for student records and department-specific student filtering.</p>
  */
 public class StudentDAO {
 
@@ -27,41 +27,49 @@ public class StudentDAO {
     // ── SQL constants ────────────────────────────────────────────────────────
 
     private static final String SQL_FIND_BY_USER_ID =
-        "SELECT s.STUDENT_ID, s.USER_ID, s.ROLL_NUMBER, s.DEPARTMENT, s.YEAR, " +
+        "SELECT s.STUDENT_ID, s.USER_ID, s.ROLL_NUMBER, s.DEPARTMENT, s.DEPT_ID, s.YEAR, " +
         "       s.SECTION, s.DATE_OF_BIRTH, s.ADDRESS, s.PARENT_USER_ID, " +
         "       u.FULL_NAME, u.EMAIL " +
         "FROM   STUDENT s JOIN USERS u ON s.USER_ID = u.USER_ID " +
         "WHERE  s.USER_ID = ?";
 
     private static final String SQL_FIND_ALL =
-        "SELECT s.STUDENT_ID, s.USER_ID, s.ROLL_NUMBER, s.DEPARTMENT, s.YEAR, " +
+        "SELECT s.STUDENT_ID, s.USER_ID, s.ROLL_NUMBER, s.DEPARTMENT, s.DEPT_ID, s.YEAR, " +
         "       s.SECTION, s.DATE_OF_BIRTH, s.ADDRESS, s.PARENT_USER_ID, " +
         "       u.FULL_NAME, u.EMAIL " +
         "FROM   STUDENT s JOIN USERS u ON s.USER_ID = u.USER_ID " +
         "ORDER BY s.ROLL_NUMBER";
 
     private static final String SQL_FIND_BY_ROLL =
-        "SELECT s.STUDENT_ID, s.USER_ID, s.ROLL_NUMBER, s.DEPARTMENT, s.YEAR, " +
+        "SELECT s.STUDENT_ID, s.USER_ID, s.ROLL_NUMBER, s.DEPARTMENT, s.DEPT_ID, s.YEAR, " +
         "       s.SECTION, s.DATE_OF_BIRTH, s.ADDRESS, s.PARENT_USER_ID, " +
         "       u.FULL_NAME, u.EMAIL " +
         "FROM   STUDENT s JOIN USERS u ON s.USER_ID = u.USER_ID " +
         "WHERE  s.ROLL_NUMBER = ?";
 
     private static final String SQL_FIND_BY_PARENT_USER_ID =
-        "SELECT s.STUDENT_ID, s.USER_ID, s.ROLL_NUMBER, s.DEPARTMENT, s.YEAR, " +
+        "SELECT s.STUDENT_ID, s.USER_ID, s.ROLL_NUMBER, s.DEPARTMENT, s.DEPT_ID, s.YEAR, " +
         "       s.SECTION, s.DATE_OF_BIRTH, s.ADDRESS, s.PARENT_USER_ID, " +
         "       u.FULL_NAME, u.EMAIL " +
         "FROM   STUDENT s JOIN USERS u ON s.USER_ID = u.USER_ID " +
         "WHERE  s.PARENT_USER_ID = ? " +
         "ORDER BY s.ROLL_NUMBER";
 
+    private static final String SQL_FIND_BY_DEPT_AND_YEAR =
+        "SELECT s.STUDENT_ID, s.USER_ID, s.ROLL_NUMBER, s.DEPARTMENT, s.DEPT_ID, s.YEAR, " +
+        "       s.SECTION, s.DATE_OF_BIRTH, s.ADDRESS, s.PARENT_USER_ID, " +
+        "       u.FULL_NAME, u.EMAIL " +
+        "FROM   STUDENT s JOIN USERS u ON s.USER_ID = u.USER_ID " +
+        "WHERE  (s.DEPT_ID = ? OR ? IS NULL) AND s.YEAR = ? " +
+        "ORDER BY s.ROLL_NUMBER";
+
     private static final String SQL_INSERT =
-        "INSERT INTO STUDENT (USER_ID, ROLL_NUMBER, DEPARTMENT, YEAR, SECTION, " +
+        "INSERT INTO STUDENT (USER_ID, ROLL_NUMBER, DEPARTMENT, DEPT_ID, YEAR, SECTION, " +
         "                     DATE_OF_BIRTH, ADDRESS, PARENT_USER_ID) " +
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
     private static final String SQL_UPDATE =
-        "UPDATE STUDENT SET DEPARTMENT = ?, YEAR = ?, SECTION = ?, " +
+        "UPDATE STUDENT SET DEPARTMENT = ?, DEPT_ID = ?, YEAR = ?, SECTION = ?, " +
         "                   DATE_OF_BIRTH = ?, ADDRESS = ?, PARENT_USER_ID = ? " +
         "WHERE STUDENT_ID = ?";
 
@@ -106,23 +114,52 @@ public class StudentDAO {
         return list;
     }
 
+    /**
+     * Filters students eligible for a target semester.
+     * Semester 1 includes year 1 students across departments.
+     * Semesters 2 to 8 filter by department and relevant year.
+     */
+    public List<Student> findByDeptAndSemester(Long deptId, int semesterNo) throws SQLException {
+        int year = (semesterNo + 1) / 2;
+        List<Student> list = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(SQL_FIND_BY_DEPT_AND_YEAR)) {
+            if (semesterNo == 1 || deptId == null || deptId <= 0) {
+                ps.setNull(1, Types.NUMERIC);
+                ps.setNull(2, Types.NUMERIC);
+            } else {
+                ps.setLong(1, deptId);
+                ps.setLong(2, deptId);
+            }
+            ps.setInt(3, year);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) list.add(mapRow(rs));
+            }
+        }
+        return list;
+    }
+
     public void insert(Student student) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(SQL_INSERT)) {
             ps.setLong(1, student.getUserId());
             ps.setString(2, student.getRollNumber());
             ps.setString(3, student.getDepartment());
-            ps.setInt(4, student.getYear());
-            ps.setString(5, student.getSection());
-            if (student.getDateOfBirth() != null) {
-                ps.setDate(6, Date.valueOf(student.getDateOfBirth()));
+            if (student.getDeptId() != null) {
+                ps.setLong(4, student.getDeptId());
             } else {
-                ps.setNull(6, Types.DATE);
+                ps.setNull(4, Types.NUMERIC);
             }
-            ps.setString(7, student.getAddress());
-            if (student.getParentUserId() != null) {
-                ps.setLong(8, student.getParentUserId());
+            ps.setInt(5, student.getYear());
+            ps.setString(6, student.getSection());
+            if (student.getDateOfBirth() != null) {
+                ps.setDate(7, Date.valueOf(student.getDateOfBirth()));
             } else {
-                ps.setNull(8, Types.NUMERIC);
+                ps.setNull(7, Types.DATE);
+            }
+            ps.setString(8, student.getAddress());
+            if (student.getParentUserId() != null) {
+                ps.setLong(9, student.getParentUserId());
+            } else {
+                ps.setNull(9, Types.NUMERIC);
             }
             ps.executeUpdate();
         }
@@ -131,20 +168,25 @@ public class StudentDAO {
     public int update(Student student) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement(SQL_UPDATE)) {
             ps.setString(1, student.getDepartment());
-            ps.setInt(2, student.getYear());
-            ps.setString(3, student.getSection());
+            if (student.getDeptId() != null) {
+                ps.setLong(2, student.getDeptId());
+            } else {
+                ps.setNull(2, Types.NUMERIC);
+            }
+            ps.setInt(3, student.getYear());
+            ps.setString(4, student.getSection());
             if (student.getDateOfBirth() != null) {
-                ps.setDate(4, Date.valueOf(student.getDateOfBirth()));
+                ps.setDate(5, Date.valueOf(student.getDateOfBirth()));
             } else {
-                ps.setNull(4, Types.DATE);
+                ps.setNull(5, Types.DATE);
             }
-            ps.setString(5, student.getAddress());
+            ps.setString(6, student.getAddress());
             if (student.getParentUserId() != null) {
-                ps.setLong(6, student.getParentUserId());
+                ps.setLong(7, student.getParentUserId());
             } else {
-                ps.setNull(6, Types.NUMERIC);
+                ps.setNull(7, Types.NUMERIC);
             }
-            ps.setLong(7, student.getStudentId());
+            ps.setLong(8, student.getStudentId());
             return ps.executeUpdate();
         }
     }
@@ -157,6 +199,8 @@ public class StudentDAO {
         s.setUserId(rs.getLong("USER_ID"));
         s.setRollNumber(rs.getString("ROLL_NUMBER"));
         s.setDepartment(rs.getString("DEPARTMENT"));
+        long deptId = rs.getLong("DEPT_ID");
+        if (!rs.wasNull()) s.setDeptId(deptId);
         s.setYear(rs.getInt("YEAR"));
         s.setSection(rs.getString("SECTION"));
         Date dob = rs.getDate("DATE_OF_BIRTH");

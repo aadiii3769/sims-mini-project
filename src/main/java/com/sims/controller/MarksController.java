@@ -1,7 +1,11 @@
 package com.sims.controller;
 
+import com.sims.dao.CourseDAO;
+import com.sims.dao.FacultyDAO;
 import com.sims.dao.MarksDAO;
 import com.sims.dao.StudentDAO;
+import com.sims.model.Course;
+import com.sims.model.Faculty;
 import com.sims.model.Mark;
 import com.sims.model.Student;
 import com.sims.model.User;
@@ -14,56 +18,58 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Business logic controller for CAT marks entry, grade derivation, and
- * GPA / CGPA computation.
+ * Business logic controller for continuous assessments (CATs & Assignments),
+ * semester grade derivation, GPA/CGPA calculations, and multi-department course queries.
  *
  * <h2>Design Pattern – Behavioral: Observer (indirect)</h2>
  * <p><b>Academic Justification</b>: Swing {@code ActionListener} observers in
- * {@code MarksEntryPanel} and {@code MarksViewPanel} call this controller when
- * faculty save marks or students refresh their grade tables. This class
- * validates input, computes derived grades, coordinates DAO calls, and
- * demarcates transactions — keeping SQL and arithmetic out of the UI.</p>
+ * {@code MarksEntryPanel} and {@code MarksViewPanel} invoke this controller when
+ * faculty save marks or students switch semesters. This class coordinates
+ * domain validation, grade calculations, DAOs, and transaction demarcation.</p>
  *
  * <h2>Transaction Demarcation</h2>
- * <p>{@code MarksDAO} methods execute DML but do NOT commit.  This controller
- * issues {@code conn.commit()} after all DAO operations succeed, or
- * {@code conn.rollback()} on any failure, per the AGENTS.md rule §4.3.</p>
+ * <p>{@code MarksDAO} methods perform DML operations without committing.
+ * This controller issues {@code conn.commit()} on complete success or
+ * {@code conn.rollback()} on any exception, complying with AGENTS.md §4.3.</p>
  */
 public class MarksController {
 
     private final MarksDAO   marksDAO;
+    private final CourseDAO  courseDAO;
+    private final FacultyDAO facultyDAO;
     private final StudentDAO studentDAO;
     private final Connection conn;
 
     public MarksController() {
         this.conn        = DBConnection.getInstance().getConnection();
         this.marksDAO    = new MarksDAO();
+        this.courseDAO   = new CourseDAO();
+        this.facultyDAO  = new FacultyDAO();
         this.studentDAO  = new StudentDAO();
     }
 
-    // ── Grade scale constant ─────────────────────────────────────────────────
+    // ── Grade scale & derivation ─────────────────────────────────────────────
 
     /**
-     * Derives the 10-point grade point from a raw total mark using the
-     * Anna University UG grading scale.
+     * Derives the 10-point grade point from raw total internal marks.
      *
-     * @param totalMarks sum of CAT1 + CAT2 + CAT3 (out of 150)
+     * @param totalMarks sum of CAT1 + CAT2 + Assignment
      * @return grade point (10.0, 9.0, 8.0, 7.0, 6.0, or 0.0 for Fail)
      */
     public double deriveGradePoint(double totalMarks) {
-        if (totalMarks >= 91) return 10.0;
-        if (totalMarks >= 81) return  9.0;
-        if (totalMarks >= 71) return  8.0;
-        if (totalMarks >= 61) return  7.0;
-        if (totalMarks >= 51) return  6.0;
+        if (totalMarks >= 90) return 10.0;
+        if (totalMarks >= 80) return  9.0;
+        if (totalMarks >= 70) return  8.0;
+        if (totalMarks >= 60) return  7.0;
+        if (totalMarks >= 50) return  6.0;
         return 0.0;   // Fail
     }
 
     /**
-     * Maps a grade point value to its letter-grade string.
+     * Maps a grade point to its Anna University letter grade.
      *
      * @param gradePoint numeric grade (0.0 – 10.0)
-     * @return letter grade such as "O", "A+", "A", "B+", "B", or "F"
+     * @return letter grade ("O", "A+", "A", "B+", "B", or "F")
      */
     public String getLetterGrade(double gradePoint) {
         if (gradePoint >= 10.0) return "O";
@@ -77,14 +83,9 @@ public class MarksController {
     // ── Save / update marks ──────────────────────────────────────────────────
 
     /**
-     * Persists a marks record.  If the {@code Mark} already has a positive
-     * {@code recordId}, the existing row is updated; otherwise a new row is
-     * inserted.  The controller computes {@code totalMarks} and
-     * {@code gradePoint} before delegating to the DAO.
-     *
-     * @param mark the marks object populated by the view (recordId may be 0
-     *             for a new record)
-     * @throws RuntimeException wrapping any {@link SQLException}
+     * Persists an assessment record. Computes {@code totalInternal},
+     * {@code gradePoint}, and {@code semesterGrade} before delegating to DAO.
+     * Commits transaction atomically or rolls back on failure.
      */
     public void saveMarks(Mark mark) {
         if (mark == null) {
@@ -92,11 +93,13 @@ public class MarksController {
         }
         validateMarkFields(mark);
 
-        double total      = mark.getCat1Marks() + mark.getCat2Marks() + mark.getCat3Marks();
+        double total      = mark.getCat1Marks() + mark.getCat2Marks() + mark.getAssignmentMarks();
         double gradePoint = deriveGradePoint(total);
-        mark.setTotalMarks(total);
+        String grade      = getLetterGrade(gradePoint);
+
+        mark.setTotalInternal(total);
         mark.setGradePoint(gradePoint);
-        mark.setLetterGrade(getLetterGrade(gradePoint));
+        mark.setSemesterGrade(grade);
 
         try {
             if (mark.getRecordId() > 0) {
@@ -111,64 +114,36 @@ public class MarksController {
         }
     }
 
-    // ── Query helpers ────────────────────────────────────────────────────────
+    // ── Query helpers for Student & Parent ───────────────────────────────────
 
-    /**
-     * Returns all marks records for a student in a given semester, with
-     * derived totals and letter grades populated.
-     *
-     * @param studentId the target student's primary key
-     * @param semester  semester number (1–8)
-     * @return list of {@link Mark} objects, may be empty
-     */
-    public List<Mark> getMarksBySemester(long studentId, int semester) {
+    public List<Mark> getMarksBySemester(long studentId, int semesterNo) {
+        return getMarksByStudentAndSemester(studentId, semesterNo);
+    }
+
+    public List<Mark> getMarksByStudentAndSemester(long studentId, int semesterNo) {
         try {
-            List<Mark> marks = marksDAO.findByStudentAndSemester(studentId, semester);
-            marks.forEach(this::populateDerivedFields);
-            return marks;
+            return marksDAO.getMarksByStudentAndSemester(studentId, semesterNo);
         } catch (SQLException e) {
             throw new RuntimeException("Marks lookup failed: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Returns all marks records for a student across all semesters, with
-     * derived totals and letter grades populated.
-     *
-     * @param studentId the target student's primary key
-     * @return list of {@link Mark} objects ordered by semester then subject
-     */
     public List<Mark> getAllMarks(long studentId) {
         try {
-            List<Mark> marks = marksDAO.findAllByStudent(studentId);
-            marks.forEach(this::populateDerivedFields);
-            return marks;
+            return marksDAO.findAllByStudent(studentId);
         } catch (SQLException e) {
-            throw new RuntimeException("Marks lookup failed: " + e.getMessage(), e);
+            throw new RuntimeException("All marks lookup failed: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Computes the GPA for a specific semester using {@code AVG(GRADE_POINT)}.
-     *
-     * @param studentId the target student's primary key
-     * @param semester  semester number
-     * @return GPA rounded to two decimal places, or 0.0 if no records exist
-     */
-    public double getSemesterGPA(long studentId, int semester) {
+    public double getSemesterGPA(long studentId, int semesterNo) {
         try {
-            return Math.round(marksDAO.computeGPA(studentId, semester) * 100.0) / 100.0;
+            return Math.round(marksDAO.computeGPA(studentId, semesterNo) * 100.0) / 100.0;
         } catch (SQLException e) {
             throw new RuntimeException("GPA computation failed: " + e.getMessage(), e);
         }
     }
 
-    /**
-     * Computes the CGPA across all semesters using {@code AVG(GRADE_POINT)}.
-     *
-     * @param studentId the target student's primary key
-     * @return CGPA rounded to two decimal places, or 0.0 if no records exist
-     */
     public double getCGPA(long studentId) {
         try {
             return Math.round(marksDAO.computeCGPA(studentId) * 100.0) / 100.0;
@@ -177,14 +152,64 @@ public class MarksController {
         }
     }
 
-    /**
-     * Resolves the student profile linked to the given viewer account.
-     * Returns the student linked by USER_ID for STUDENT role, or the child
-     * student linked by PARENT_USER_ID for PARENT role.
-     *
-     * @param viewer the currently logged-in user
-     * @return {@code Optional<Student>} — empty if not found or wrong role
-     */
+    // ── Query helpers for Faculty ────────────────────────────────────────────
+
+    public Optional<Faculty> findFacultyProfileByUserId(long userId) {
+        try {
+            return facultyDAO.findByUserId(userId);
+        } catch (SQLException e) {
+            throw new RuntimeException("Faculty profile lookup failed: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Course> getCoursesByDeptAndSemester(Long deptId, int semesterNo) {
+        try {
+            return courseDAO.getCoursesByDeptAndSemester(deptId, semesterNo);
+        } catch (SQLException e) {
+            throw new RuntimeException("Courses lookup failed: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Course> getFacultyAllocatedCourses(long facultyId) {
+        try {
+            return courseDAO.getFacultyAllocatedCourses(facultyId);
+        } catch (SQLException e) {
+            throw new RuntimeException("Allocated courses lookup failed: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Course> getFacultyAllocatedCoursesBySemester(long facultyId, int semesterNo) {
+        try {
+            return courseDAO.getFacultyAllocatedCoursesBySemester(facultyId, semesterNo);
+        } catch (SQLException e) {
+            throw new RuntimeException("Allocated courses lookup failed: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Student> getStudentsForCourseEntry(Long deptId, int semesterNo) {
+        try {
+            return studentDAO.findByDeptAndSemester(deptId, semesterNo);
+        } catch (SQLException e) {
+            throw new RuntimeException("Eligible students lookup failed: " + e.getMessage(), e);
+        }
+    }
+
+    public List<Mark> getMarksByCourseAndSemester(long courseId, int semesterNo) {
+        try {
+            return marksDAO.getMarksByCourseAndSemester(courseId, semesterNo);
+        } catch (SQLException e) {
+            throw new RuntimeException("Course marks lookup failed: " + e.getMessage(), e);
+        }
+    }
+
+    public Optional<Mark> findExistingMark(long studentId, long courseId, int semesterNo) {
+        try {
+            return marksDAO.findByStudentCourseAndSem(studentId, courseId, semesterNo);
+        } catch (SQLException e) {
+            throw new RuntimeException("Mark lookup failed: " + e.getMessage(), e);
+        }
+    }
+
     public Optional<Student> findStudentForViewer(User viewer) {
         if (viewer == null || viewer.getRole() == null) {
             return Optional.empty();
@@ -202,39 +227,27 @@ public class MarksController {
         }
     }
 
-    // ── Private helpers ──────────────────────────────────────────────────────
+    // ── Validation & transaction cleanup ─────────────────────────────────────
 
     private void validateMarkFields(Mark mark) {
         if (mark.getStudentId() <= 0) {
-            throw new IllegalArgumentException("Student is required.");
+            throw new IllegalArgumentException("Student selection is required.");
         }
-        if (mark.getFacultyId() <= 0) {
-            throw new IllegalArgumentException("Faculty is required.");
+        if (mark.getCourseId() <= 0) {
+            throw new IllegalArgumentException("Course selection is required.");
         }
-        if (mark.getSubject() == null || mark.getSubject().isBlank()) {
-            throw new IllegalArgumentException("Subject is required.");
-        }
-        if (mark.getSemester() < 1 || mark.getSemester() > 8) {
+        if (mark.getSemesterNo() < 1 || mark.getSemesterNo() > 8) {
             throw new IllegalArgumentException("Semester must be between 1 and 8.");
         }
         if (mark.getCat1Marks() < 0 || mark.getCat1Marks() > 50) {
-            throw new IllegalArgumentException("CAT1 marks must be between 0 and 50.");
+            throw new IllegalArgumentException("CAT 1 marks must be between 0 and 50.");
         }
         if (mark.getCat2Marks() < 0 || mark.getCat2Marks() > 50) {
-            throw new IllegalArgumentException("CAT2 marks must be between 0 and 50.");
+            throw new IllegalArgumentException("CAT 2 marks must be between 0 and 50.");
         }
-        if (mark.getCat3Marks() < 0 || mark.getCat3Marks() > 50) {
-            throw new IllegalArgumentException("CAT3 marks must be between 0 and 50.");
+        if (mark.getAssignmentMarks() < 0 || mark.getAssignmentMarks() > 50) {
+            throw new IllegalArgumentException("Assignment marks must be between 0 and 50.");
         }
-        if (mark.getAcademicYear() == null || mark.getAcademicYear().isBlank()) {
-            throw new IllegalArgumentException("Academic year is required.");
-        }
-    }
-
-    private void populateDerivedFields(Mark mark) {
-        double total = mark.getCat1Marks() + mark.getCat2Marks() + mark.getCat3Marks();
-        mark.setTotalMarks(total);
-        mark.setLetterGrade(getLetterGrade(mark.getGradePoint()));
     }
 
     private void rollbackQuietly() {

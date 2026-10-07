@@ -15,6 +15,7 @@ public class Student {
     private long      userId;          // FK → USERS.USER_ID
     private String    rollNumber;
     private String    department;
+    private Long      deptId;          // FK → DEPARTMENT.DEPT_ID
     private int       year;
     private String    section;
     private LocalDate dateOfBirth;
@@ -43,8 +44,14 @@ public class Student {
     public String getDepartment()                   { return department; }
     public void setDepartment(String department)    { this.department = department; }
 
+    public Long getDeptId()                         { return deptId; }
+    public void setDeptId(Long deptId)              { this.deptId = deptId; }
+
     public int getYear()                            { return year; }
     public void setYear(int year)                   { this.year = year; }
+
+    /** Returns current active odd semester (Year 1 -> Sem 1, Year 2 -> Sem 3, etc.) */
+    public int getCurrentSemester()                 { return Math.max(1, (year * 2) - 1); }
 
     public String getSection()                      { return section; }
     public void setSection(String section)          { this.section = section; }
