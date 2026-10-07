@@ -68,15 +68,21 @@ public class StudentController {
         newUser.setRole(UserRole.STUDENT);
 
         try {
-            userDAO.insert(newUser);
-
-            // Retrieve the generated USER_ID to link the STUDENT row
-            Optional<User> inserted = userDAO.findByUsername(newUser.getUsername());
-            if (inserted.isEmpty()) {
-                conn.rollback();
-                throw new RuntimeException("User insert succeeded but lookup failed — rolled back.");
+            long generatedUserId = userDAO.insert(newUser);
+            if (generatedUserId <= 0) {
+                generatedUserId = newUser.getUserId();
             }
-            newStudent.setUserId(inserted.get().getUserId());
+            if (generatedUserId <= 0) {
+                Optional<User> inserted = userDAO.findByUsername(newUser.getUsername());
+                if (inserted.isPresent()) {
+                    generatedUserId = inserted.get().getUserId();
+                }
+            }
+            if (generatedUserId <= 0) {
+                conn.rollback();
+                throw new RuntimeException("User insert succeeded but user ID could not be resolved — rolled back.");
+            }
+            newStudent.setUserId(generatedUserId);
             studentDAO.insert(newStudent);
 
             conn.commit();

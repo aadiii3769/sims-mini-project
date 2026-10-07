@@ -262,9 +262,12 @@ public class LoginFrame extends JFrame {
             else                          markFieldError(passwordField);
 
         } catch (SecurityException ex) {
+            String msg = (ex.getMessage() != null && !ex.getMessage().isBlank())
+                ? ex.getMessage()
+                : "Invalid credentials. Please check your username and password.";
             JOptionPane.showMessageDialog(
                 this,
-                "Invalid credentials. Please check your username and password.",
+                msg,
                 "Login Failed",
                 JOptionPane.ERROR_MESSAGE
             );

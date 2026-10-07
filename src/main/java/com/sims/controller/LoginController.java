@@ -64,6 +64,9 @@ public class LoginController {
             }
 
             User user = userOpt.get();
+            if (!user.isActive()) {
+                throw new SecurityException("This account has been deactivated. Please contact an administrator.");
+            }
 
             // Phase 1: BCrypt constant-time comparison.
             boolean passwordMatch = BCrypt.checkpw(password, user.getPasswordHash());

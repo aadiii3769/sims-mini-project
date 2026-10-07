@@ -47,7 +47,7 @@ public class AttendanceDAO {
         "ORDER BY a.LOG_DATE DESC";
 
     private static final String SQL_MONTHLY_SUMMARY =
-        "SELECT SUM(CASE WHEN STATUS = 'PRESENT' THEN 1 ELSE 0 END) AS PRESENT_COUNT, " +
+        "SELECT SUM(CASE WHEN STATUS IN ('PRESENT', 'OD') THEN 1 ELSE 0 END) AS PRESENT_COUNT, " +
         "       SUM(CASE WHEN STATUS = 'ABSENT' THEN 1 ELSE 0 END) AS ABSENT_COUNT, " +
         "       COUNT(*) AS TOTAL_COUNT " +
         "FROM   ATTENDANCE " +
