@@ -50,8 +50,9 @@ public class StudentDashboard extends JFrame {
 
     private void buildUI() {
         JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab("Attendance", new AttendanceViewPanel(loggedInUser));
-        tabs.addTab("Marks",      new MarksViewPanel(loggedInUser));
+        tabs.addTab("Attendance",      new AttendanceViewPanel(loggedInUser));
+        tabs.addTab("Marks",           new MarksViewPanel(loggedInUser));
+        tabs.addTab("Fees & Payments", new PaymentPanel(loggedInUser));
 
         add(buildHeader(), BorderLayout.NORTH);
         add(tabs, BorderLayout.CENTER);

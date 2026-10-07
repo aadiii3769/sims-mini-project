@@ -60,7 +60,7 @@ public class AdminDashboard extends JFrame {
         // ── Tabs ──────────────────────────────────────────────────────────
         tabbedPane.addTab("\uD83D\uDC64  Student Management", studentListPanel);
         tabbedPane.addTab("\uD83D\uDCCB  Marks", buildMarksAdminPanel());
-        // Phase 5 will addTab() for Fees here
+        tabbedPane.addTab("\uD83D\uDCB3  Fee Management", new FeeManagementPanel(this));
 
         // ── Status bar ──────────────────────────────────────────────────────
         JPanel statusBar = buildStatusBar();

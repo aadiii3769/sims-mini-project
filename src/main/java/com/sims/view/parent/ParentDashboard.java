@@ -5,6 +5,7 @@ import com.sims.util.DBConnection;
 import com.sims.view.LoginFrame;
 import com.sims.view.student.AttendanceViewPanel;
 import com.sims.view.student.MarksViewPanel;
+import com.sims.view.student.PaymentPanel;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -51,8 +52,9 @@ public class ParentDashboard extends JFrame {
 
     private void buildUI() {
         JTabbedPane tabs = new JTabbedPane();
-        tabs.addTab("Attendance", new AttendanceViewPanel(loggedInUser));
-        tabs.addTab("Marks",      new MarksViewPanel(loggedInUser));
+        tabs.addTab("Attendance",      new AttendanceViewPanel(loggedInUser));
+        tabs.addTab("Marks",           new MarksViewPanel(loggedInUser));
+        tabs.addTab("Fees & Payments", new PaymentPanel(loggedInUser));
 
         add(buildHeader(), BorderLayout.NORTH);
         add(tabs, BorderLayout.CENTER);
