@@ -3,6 +3,7 @@ package com.sims.view.admin;
 import com.sims.model.User;
 import com.sims.util.DBConnection;
 import com.sims.view.LoginFrame;
+import com.sims.view.student.MarksViewPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -57,8 +58,9 @@ public class AdminDashboard extends JFrame {
         JPanel header = buildHeader();
 
         // ── Tabs ──────────────────────────────────────────────────────────
-        tabbedPane.addTab("👤  Student Management", studentListPanel);
-        // Phase 3, 4, 5 will addTab() here
+        tabbedPane.addTab("\uD83D\uDC64  Student Management", studentListPanel);
+        tabbedPane.addTab("\uD83D\uDCCB  Marks", buildMarksAdminPanel());
+        // Phase 5 will addTab() for Fees here
 
         // ── Status bar ──────────────────────────────────────────────────────
         JPanel statusBar = buildStatusBar();
@@ -190,4 +192,33 @@ public class AdminDashboard extends JFrame {
     public JTabbedPane getTabbedPane() {
         return tabbedPane;
     }
+
+    /**
+     * Builds the Marks admin panel — an informational placeholder that
+     * advises admins to use faculty login for marks entry and provides a
+     * read-only marks view for the logged-in admin's user account.
+     *
+     * <p>The admin role does not enter marks directly; that is faculty work.
+     * This panel provides oversight visibility.</p>
+     *
+     * @return a {@link JPanel} summarising marks oversight options
+     */
+    private JPanel buildMarksAdminPanel() {
+        JPanel panel = new JPanel(new BorderLayout(0, 12));
+        panel.setBorder(BorderFactory.createEmptyBorder(16, 16, 16, 16));
+
+        JLabel heading = new JLabel("Marks Overview (Admin)");
+        heading.setFont(new Font("SansSerif", Font.BOLD, 16));
+
+        JLabel info = new JLabel(
+            "<html>Marks entry is performed by Faculty via the Faculty Dashboard.<br>"
+            + "Use the <b>Student Management</b> tab to locate a student, then verify<br>"
+            + "marks by searching the Oracle DB directly if required.</html>");
+        info.setFont(new Font("SansSerif", Font.PLAIN, 13));
+
+        panel.add(heading, BorderLayout.NORTH);
+        panel.add(info, BorderLayout.CENTER);
+        return panel;
+    }
 }
+

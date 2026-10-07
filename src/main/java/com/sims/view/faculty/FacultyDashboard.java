@@ -3,6 +3,7 @@ package com.sims.view.faculty;
 import com.sims.model.User;
 import com.sims.util.DBConnection;
 import com.sims.view.LoginFrame;
+import com.sims.view.faculty.MarksEntryPanel;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -73,6 +74,7 @@ public class FacultyDashboard extends JFrame {
         header.add(rightPanel, BorderLayout.EAST);
 
         tabbedPane.addTab("Attendance Entry", new AttendanceEntryPanel(this, loggedInUser));
+        tabbedPane.addTab("Marks Entry",     new MarksEntryPanel(this, loggedInUser));
 
         add(header, BorderLayout.NORTH);
         add(tabbedPane, BorderLayout.CENTER);
