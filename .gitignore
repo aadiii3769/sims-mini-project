@@ -45,3 +45,6 @@ hs_err_pid*.log
 
 # ─── Docker volumes (local) ───────────────────────────────────────────────────
 oracle-data/
+
+# ─── Standalone subproject ────────────────────────────────────────────────────
+standalone-sims/
