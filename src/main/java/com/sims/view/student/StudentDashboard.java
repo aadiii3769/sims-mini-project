@@ -4,6 +4,7 @@ import com.sims.model.User;
 import com.sims.util.DBConnection;
 import com.sims.view.LoginFrame;
 import com.sims.view.student.MarksViewPanel;
+import com.sims.view.student.TranscriptPanel;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -49,6 +50,7 @@ public class StudentDashboard extends JFrame {
         tabs.addTab("Attendance",      new AttendanceViewPanel(loggedInUser));
         tabs.addTab("Marks",           new MarksViewPanel(loggedInUser));
         tabs.addTab("Fees & Payments", new PaymentPanel(loggedInUser));
+        tabs.addTab("📄 Transcript",     new TranscriptPanel(loggedInUser));
 
         add(buildHeader(), BorderLayout.NORTH);
         add(tabs, BorderLayout.CENTER);

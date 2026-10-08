@@ -4,6 +4,7 @@ import com.sims.model.User;
 import com.sims.util.DBConnection;
 import com.sims.view.LoginFrame;
 import com.sims.view.student.MarksViewPanel;
+import com.sims.view.admin.TranscriptAdminPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -61,6 +62,7 @@ public class AdminDashboard extends JFrame {
         tabbedPane.addTab("\uD83D\uDC64  Student Management", studentListPanel);
         tabbedPane.addTab("\uD83D\uDCCB  Marks", buildMarksAdminPanel());
         tabbedPane.addTab("\uD83D\uDCB3  Fee Management", new FeeManagementPanel(this));
+        tabbedPane.addTab("\uD83D\uDCC4  Transcript", new TranscriptAdminPanel(this));
 
         // ── Status bar ──────────────────────────────────────────────────────
         JPanel statusBar = buildStatusBar();
